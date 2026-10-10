@@ -1,0 +1,18 @@
+# Secrets: database password, payment and reCAPTCHA keys. Copy app/config.sample.php to app/config.php on each server.
+app/config.php
+
+# Photos uploaded through the admin panel are website content, not code — back them up from the server instead.
+# The .htaccess file stays: it stops scripts from running inside uploads/.
+uploads/*
+!uploads/.htaccess
+
+# Not part of this website
+m8xzqe3g.png
+
+# Local / editor / OS files
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+_*.html
