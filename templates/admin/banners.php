@@ -26,7 +26,7 @@ $visible = count(array_filter($slides, fn($s) => $s['is_active']));
             <div class="card-header d-flex flex-wrap align-items-center gap-2">
                 <div>
                     <div>Home page slider</div>
-                    <div class="small text-muted fw-normal"><?= $visible ?> of <?= count($slides) ?> slides showing · they change every 6 seconds, top to bottom</div>
+                    <div class="small text-muted fw-normal"><?= $visible ?> of <?= count($slides) ?> slides showing · photos change every 6 seconds, videos play to the end · top to bottom</div>
                 </div>
                 <a href="<?= e(url('admin/banners/slide')) ?>" class="btn btn-primary ms-auto"><i class="bi bi-plus-lg"></i> Add slide</a>
             </div>
@@ -42,9 +42,13 @@ $visible = count(array_filter($slides, fn($s) => $s['is_active']));
                                 <td class="text-muted fw-semibold"><?= $i + 1 ?></td>
                                 <td>
                                     <div class="slide-cell">
-                                        <a href="<?= e(url('admin/banners/slide?id=' . $s['id'])) ?>" class="slide-thumb" style="background-image:url('<?= e(img($s['image'])) ?>')" aria-label="Edit slide <?= $i + 1 ?>"></a>
+                                        <?php $isVid = $s['media_type'] === 'video' && $s['video']; ?>
+                                        <a href="<?= e(url('admin/banners/slide?id=' . $s['id'])) ?>" class="slide-thumb<?= $isVid ? ' is-video' : '' ?>"<?php if ($s['image'] || !$isVid): ?> style="background-image:url('<?= e(img($s['image'])) ?>')"<?php endif; ?> aria-label="Edit slide <?= $i + 1 ?>">
+                                            <?php if ($isVid && !$s['image']): ?><video src="<?= e(url($s['video'])) ?>#t=1" muted playsinline preload="metadata"></video><?php endif; ?>
+                                            <?php if ($isVid): ?><span class="slide-thumb-play"><i class="bi bi-play-fill"></i></span><?php endif; ?>
+                                        </a>
                                         <div class="min-w-0">
-                                            <a href="<?= e(url('admin/banners/slide?id=' . $s['id'])) ?>" class="row-link fw-semibold d-block text-truncate"><?= e(implode(' ', array_map('trim', $lines)) ?: 'No heading') ?></a>
+                                            <a href="<?= e(url('admin/banners/slide?id=' . $s['id'])) ?>" class="row-link fw-semibold d-block text-truncate"><?php if ($isVid): ?><span class="media-tag"><i class="bi bi-camera-video-fill"></i> Video</span><?php endif; ?><?= e(implode(' ', array_map('trim', $lines)) ?: 'No heading') ?></a>
                                             <div class="small text-muted text-truncate"><?= e($s['subtitle'] ?: 'No sub-heading') ?></div>
                                         </div>
                                     </div>

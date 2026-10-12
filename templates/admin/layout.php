@@ -20,10 +20,12 @@ $menu = [
         'admin/projects'     => ['Projects', 'kanban', 0],
         'admin/activities'   => ['Activities & Gallery', 'images', 0],
         'admin/testimonials' => ['Testimonials', 'quote', 0],
+        'admin/popup'        => ['Website Popup', 'window-stack', 0],
     ],
     'Configuration' => [
         'admin/seo'      => ['SEO', 'search', 0],
         'admin/payments' => ['Payment Settings', 'credit-card', 0],
+        'admin/recaptcha' => ['Spam Protection', 'shield-check', 0],
         'admin/settings' => ['Site Settings', 'sliders', 0],
         'admin/account'  => ['Account & Users', 'shield-lock', 0],
     ],

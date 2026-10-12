@@ -16,11 +16,12 @@ A dynamic website with an admin panel. Built with **PHP 8 + MySQL**, with no fra
 - **Enquiries**: the contact form (general, volunteer, sponsor a child…), with status and notes.
 - **Donation Purposes**: the "Donate towards" choices (General Donation, Education, Food & Nutrition, Shelter & Care…) — add, edit, reorder, switch on/off or delete. Ongoing projects are listed there too.
 - **About Us**: the About section on the home page and About Us page — titles, story text, quote, photo, the 3 key numbers, mission card, vision, mission and our work.
-- **Banners**: home page slider (add, edit, reorder, hide, delete slides) and the top banner of each page, each with a live preview.
+- **Banners**: home page slider (add, edit, reorder, hide, delete slides — each slide is a photo or a short MP4/WebM video up to 40 MB, which plays without sound and then moves on) and the top banner of each page, each with a live preview.
 - **Impact Numbers**: the "Your Contribution Creates Measurable Change" figures on the home page.
 - **Projects**: add, edit or hide projects, with a photo, key points and an optional fundraising goal with a progress bar. They appear on the home page, `/projects`, `/projects/{name}` and in the donation form.
 - **Activities & Gallery**: the 7 activities (Education Programs, Food & Nutrition, Community Support, Extracurricular, Events & Initiatives, Donor Testimonials, Media Gallery). You can add new ones, upload many photos at once, set captions, order and the cover photo.
 - **Testimonials**: the "Voices of Change" section on the home page.
+- **Website Popup**: an announcement box with a photo (or a poster/flyer on its own) that opens over the home page or every page — on/off, button link, once per visit / once a day, optional start and end dates. It never opens on the donate page.
 - **Site Settings**: phones, emails, addresses, bank and UPI details, About / Vision / Mission text, stats, social links, suggested donation amounts.
 
 ## Pages

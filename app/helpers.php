@@ -345,7 +345,7 @@ function normalize_phone(string $phone): ?string
     return preg_match('/^[6-9]\d{9}$/', $digits) ? $digits : null;
 }
 
-/** reCAPTCHA v2 ("I'm not a robot") keys: Admin -> Site Settings, falling back to app/config.php. */
+/** reCAPTCHA v2 ("I'm not a robot") keys: Admin -> Spam Protection, falling back to app/config.php. */
 function recaptcha_site_key(): string
 {
     return setting('recaptcha_site_key', (string) config('recaptcha.site_key', ''));
@@ -356,13 +356,74 @@ function recaptcha_secret_key(): string
     return setting('recaptcha_secret_key', (string) config('recaptcha.secret_key', ''));
 }
 
-/** The checkbox is shown whenever a site key is set. */
-function recaptcha_enabled(): bool
+/**
+ * 'v2' = the "I'm not a robot" checkbox; 'v3' = invisible, Google scores each visitor in the background.
+ * Must match the type chosen when the keys were created at google.com/recaptcha/admin.
+ */
+function recaptcha_type(): string
 {
-    return recaptcha_site_key() !== '';
+    return setting('recaptcha_type', 'v2') === 'v3' ? 'v3' : 'v2';
 }
 
-/** Server-side check. Only possible with the secret key; without it the checkbox works in the browser only. */
+/** Lowest v3 score (0.0 = bot, 1.0 = human) that is accepted. */
+const RECAPTCHA_V3_MIN_SCORE = 0.5;
+
+/**
+ * Spam protection is active on the contact form when switched on and a site key is set.
+ * v3 has no checkbox and only works with the server-side check, so it also needs the secret key.
+ */
+function recaptcha_enabled(): bool
+{
+    if (setting('recaptcha_on', '1') !== '1' || recaptcha_site_key() === '') {
+        return false;
+    }
+    return recaptcha_type() === 'v2' || recaptcha_secret_key() !== '';
+}
+
+/** Asks Google about a token. Returns Google's answer (success, score, action, error-codes…) or ['error' => …]. */
+function recaptcha_verify(string $secret, string $token): array
+{
+    $ch = curl_init('https://www.google.com/recaptcha/api/siteverify');
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => http_build_query(['secret' => $secret, 'response' => $token, 'remoteip' => client_ip()]),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 15,
+    ]);
+    $body = curl_exec($ch);
+    $error = curl_error($ch);
+    curl_close($ch);
+    if ($body === false) {
+        return ['success' => false, 'error' => 'Could not reach Google: ' . $error];
+    }
+    return json_decode((string) $body, true) ?: ['success' => false];
+}
+
+/**
+ * Admin key test: sends a real token (a v2 tick, or a v3 background check) to Google with the secret key.
+ * Returns '' when both keys work together, otherwise a plain explanation.
+ * (Google cannot check a secret key on its own, so the admin page creates a real token first.)
+ */
+function recaptcha_test_keys(string $secret, string $token): string
+{
+    $res = recaptcha_verify($secret, $token);
+    if (!empty($res['success'])) {
+        return '';
+    }
+    if (!empty($res['error'])) {
+        return $res['error'];
+    }
+    $codes = (array) ($res['error-codes'] ?? []);
+    if (array_intersect($codes, ['invalid-input-secret', 'missing-input-secret'])) {
+        return 'Google says the secret key is not valid. Copy it again from google.com/recaptcha/admin.';
+    }
+    if (in_array('timeout-or-duplicate', $codes, true)) {
+        return 'The check expired (they last 2 minutes) or was already used. Try the test again straight away.';
+    }
+    return 'Google did not accept the check with this secret key. Make sure the secret key belongs to the same reCAPTCHA as the site key, and that the key type is right.';
+}
+
+/** Server-side check of a contact form message. Without the secret key a v2 checkbox works in the browser only. */
 function recaptcha_passes(): bool
 {
     if (!recaptcha_enabled() || recaptcha_secret_key() === '') {
@@ -372,16 +433,15 @@ function recaptcha_passes(): bool
     if (!is_string($token) || $token === '') {
         return false;
     }
-    $ch = curl_init('https://www.google.com/recaptcha/api/siteverify');
-    curl_setopt_array($ch, [
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => http_build_query(['secret' => recaptcha_secret_key(), 'response' => $token, 'remoteip' => client_ip()]),
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 10,
-    ]);
-    $res = json_decode((string) curl_exec($ch), true);
-    curl_close($ch);
-    return !empty($res['success']);
+    $res = recaptcha_verify(recaptcha_secret_key(), $token);
+    if (empty($res['success'])) {
+        return false;
+    }
+    if (recaptcha_type() === 'v3') {
+        // v3: also check the score and that the token was made for the contact form.
+        return (float) ($res['score'] ?? 0) >= RECAPTCHA_V3_MIN_SCORE && ($res['action'] ?? 'contact') === 'contact';
+    }
+    return true;
 }
 
 function notify_admin(string $subject, string $body): void
@@ -741,4 +801,136 @@ function font_tags(): string
     $serif = in_array($f['head'], ['Fraunces', 'Playfair Display', 'Lora', 'Merriweather'], true) ? 'Georgia, serif' : 'system-ui, sans-serif';
     return '<link href="https://fonts.googleapis.com/css2?' . e($f['query']) . '&amp;display=swap" rel="stylesheet">' . "\n"
         . '    <style>:root{--font-head:"' . e($f['head']) . '",' . $serif . ';--font-body:"' . e($f['body']) . '",system-ui,-apple-system,"Segoe UI",sans-serif;}</style>';
+}
+
+/** Largest upload the server accepts, in bytes (the smaller of PHP's two limits). */
+function server_upload_limit(): int
+{
+    $toBytes = function (string $v): int {
+        $v = trim($v);
+        $n = (int) $v;
+        return match (strtolower(substr($v, -1))) { 'g' => $n * 1024 ** 3, 'm' => $n * 1024 ** 2, 'k' => $n * 1024, default => $n };
+    };
+    $limits = array_filter([$toBytes((string) ini_get('upload_max_filesize')), $toBytes((string) ini_get('post_max_size'))]);
+    return $limits ? min($limits) : 8 * 1024 ** 2;
+}
+
+/** Biggest slider video allowed: 40 MB, or less if the server is set lower. */
+function video_upload_limit(): int
+{
+    return min(40 * 1024 ** 2, server_upload_limit());
+}
+
+/**
+ * Validates and stores an uploaded MP4 / WebM video under uploads/$folder. Returns the relative path.
+ * The real file contents are checked (not just the name), so other files can't be passed off as videos.
+ */
+function store_video_upload(array $file, string $folder): string
+{
+    $error = $file['error'] ?? UPLOAD_ERR_NO_FILE;
+    if ($error === UPLOAD_ERR_INI_SIZE || $error === UPLOAD_ERR_FORM_SIZE) {
+        throw new RuntimeException('The video is too large. The limit is ' . round(video_upload_limit() / 1024 ** 2) . ' MB — please shorten or compress it.');
+    }
+    if ($error !== UPLOAD_ERR_OK) {
+        throw new RuntimeException($error === UPLOAD_ERR_NO_FILE ? 'No video was chosen.' : 'The video could not be uploaded. Please try again.');
+    }
+    if ($file['size'] > video_upload_limit()) {
+        throw new RuntimeException('The video is too large. The limit is ' . round(video_upload_limit() / 1024 ** 2) . ' MB — please shorten or compress it.');
+    }
+    $mime = (string) (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
+    $types = ['video/mp4' => 'mp4', 'video/webm' => 'webm', 'video/x-m4v' => 'mp4'];
+    if (!isset($types[$mime])) {
+        throw new RuntimeException('Only MP4 or WebM videos are allowed' . ($mime === 'video/quicktime' ? ' (iPhone .MOV files must be saved as MP4 first).' : '.'));
+    }
+    $folder = trim(preg_replace('/[^a-z0-9_-]/', '', strtolower($folder)), '/');
+    $dir = ROOT . '/uploads/' . $folder;
+    if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+        throw new RuntimeException('Could not create the upload folder.');
+    }
+    $name = date('Ymd') . '-' . bin2hex(random_bytes(6)) . '.' . $types[$mime];
+    if (!move_uploaded_file($file['tmp_name'], "$dir/$name")) {
+        throw new RuntimeException('Could not save the video.');
+    }
+    return "uploads/$folder/$name";
+}
+
+// ---------------------------------------------------------------- website popup (Admin -> Website Popup)
+
+/** Starting values for the popup. Stored in settings as popup_<key>. */
+function popup_defaults(): array
+{
+    return [
+        'on'        => '0',
+        'layout'    => 'card',      // card: photo + heading + message + button · poster: the photo alone (a flyer), clickable
+        'image'     => '',
+        'title'     => 'Help a Child Go to School',
+        'text'      => 'Your gift pays for books, a uniform and a warm meal for a child at Krishnashraya.',
+        'button'    => 'Donate Now',
+        'link'      => 'donate',
+        'pages'     => 'home',      // home | all
+        'frequency' => 'session',   // session: once per visit · day: once a day · always: every time a page opens
+        'delay'     => '3',         // seconds after the page opens
+        'start'     => '',          // optional Y-m-d dates
+        'end'       => '',
+    ];
+}
+
+/** The popup as saved in the admin (an empty heading stays empty, unlike setting()). */
+function popup(): array
+{
+    $all = settings_all();
+    $out = [];
+    foreach (popup_defaults() as $k => $d) {
+        $out[$k] = array_key_exists("popup_$k", $all) && $all["popup_$k"] !== null ? (string) $all["popup_$k"] : $d;
+    }
+    return $out;
+}
+
+/** Turns a button link typed in the admin into a URL: a page of this site ("donate", "contact") or a full http(s) address. '' if unusable. */
+function popup_link(string $link): string
+{
+    $link = trim($link);
+    if ($link === '') {
+        return '';
+    }
+    if (preg_match('#^https?://#i', $link)) {
+        return filter_var($link, FILTER_VALIDATE_URL) ? $link : '';
+    }
+    $link = ltrim($link, '/');
+    return preg_match('/^[a-z0-9\/_.?=&%#-]*$/i', $link) ? url($link) : '';
+}
+
+/** Where the popup stands today: [state, headline, detail]; state is full (showing), half (scheduled/ended) or off. */
+function popup_status(array $p): array
+{
+    $where = $p['pages'] === 'all' ? 'on every page' : 'on the home page';
+    $often = ['session' => 'once per visit', 'day' => 'once a day', 'always' => 'every time a page opens'][$p['frequency']] ?? 'once per visit';
+    $today = date('Y-m-d');
+    if ($p['on'] !== '1') {
+        return ['off', 'The popup is turned off', 'Visitors don\'t see it. Switch it on below when you have something to announce.'];
+    }
+    if ($p['start'] !== '' && $today < $p['start']) {
+        return ['half', 'Scheduled — starts on ' . date('j M Y', strtotime($p['start'])), "It will then show $where, $often."];
+    }
+    if ($p['end'] !== '' && $today > $p['end']) {
+        return ['half', 'Ended on ' . date('j M Y', strtotime($p['end'])), 'Change or clear the "Show until" date to show it again.'];
+    }
+    return ['full', 'Showing ' . $where . ' now', ucfirst($often) . ', ' . ((int) $p['delay'] ? $p['delay'] . ' seconds after the page opens' : 'as soon as the page opens') . ($p['end'] !== '' ? ', until ' . date('j M Y', strtotime($p['end'])) : '') . '.'];
+}
+
+/** Whether the popup belongs on the page being shown. Never on the donate pages, so a payment is not interrupted. */
+function popup_visible(): bool
+{
+    $p = popup();
+    if (popup_status($p)[0] !== 'full') {
+        return false;
+    }
+    if ($p['layout'] === 'poster' ? $p['image'] === '' : ($p['image'] === '' && $p['title'] === '' && $p['text'] === '')) {
+        return false;
+    }
+    $path = current_path();
+    if ($path === 'donate' || str_starts_with($path, 'donate/')) {
+        return false;
+    }
+    return $p['pages'] === 'all' || $path === '';
 }

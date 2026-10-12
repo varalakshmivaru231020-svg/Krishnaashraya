@@ -70,7 +70,7 @@
     <div class="table-responsive">
         <table class="table table-hover">
             <thead>
-            <tr><th>Date</th><th>Donor</th><th>Phone</th><th class="num">Amount</th><th>Towards</th><th>Status</th><th>Follow-up</th></tr>
+            <tr><th>Date</th><th>Donor</th><th>Phone</th><th class="num">Amount</th><th>Towards</th><th>Status</th><th>Follow-up</th><th class="text-end">Action</th></tr>
             </thead>
             <tbody>
             <?php foreach ($donations as $d): ?>
@@ -85,10 +85,11 @@
                     <td class="small"><?= e(mb_strimwidth(donation_towards($d), 0, 30, '…')) ?></td>
                     <td><?php partial('../admin/status-badge', ['status' => $d['status']]); ?></td>
                     <td><?= $d['followed_up'] ? '<i class="bi bi-check-circle-fill text-success"></i> Done' : ($d['status'] === 'paid' ? '<span class="text-muted small">—</span>' : '<span class="text-warning small fw-semibold">To do</span>') ?></td>
+                    <td class="text-end"><a class="btn btn-sm btn-outline-primary text-nowrap" href="<?= e(url('admin/donations/view?id=' . $d['id'])) ?>"><i class="bi bi-eye"></i> View</a></td>
                 </tr>
             <?php endforeach; ?>
             <?php if (!$donations): ?>
-                <tr><td colspan="7"><div class="empty"><i class="bi bi-inbox"></i>No donations match these filters.</div></td></tr>
+                <tr><td colspan="8"><div class="empty"><i class="bi bi-inbox"></i>No donations match these filters.</div></td></tr>
             <?php endif; ?>
             </tbody>
         </table>

@@ -37,7 +37,7 @@
 <div class="card">
     <div class="table-responsive">
         <table class="table table-hover">
-            <thead><tr><th>Date</th><th>From</th><th>Phone</th><th>Type</th><th>Message</th><th>Status</th></tr></thead>
+            <thead><tr><th>Date</th><th>From</th><th>Phone</th><th>Type</th><th>Message</th><th>Status</th><th class="text-end">Action</th></tr></thead>
             <tbody>
             <?php foreach ($enquiries as $q): ?>
                 <tr<?= $q['status'] === 'new' ? ' class="fw-semibold"' : '' ?>>
@@ -47,10 +47,11 @@
                     <td class="small fw-normal"><?= e(enquiry_types()[$q['type']] ?? $q['type']) ?></td>
                     <td class="small fw-normal" style="max-width:320px"><a class="row-link" href="<?= e(url('admin/enquiries/view?id=' . $q['id'])) ?>"><?= e(mb_strimwidth($q['message'], 0, 90, '…')) ?></a></td>
                     <td><?php partial('../admin/status-badge', ['status' => $q['status']]); ?></td>
+                    <td class="text-end"><a class="btn btn-sm btn-outline-primary text-nowrap" href="<?= e(url('admin/enquiries/view?id=' . $q['id'])) ?>"><i class="bi bi-eye"></i> View</a></td>
                 </tr>
             <?php endforeach; ?>
             <?php if (!$enquiries): ?>
-                <tr><td colspan="6"><div class="empty"><i class="bi bi-inbox"></i>No enquiries match these filters.</div></td></tr>
+                <tr><td colspan="7"><div class="empty"><i class="bi bi-inbox"></i>No enquiries match these filters.</div></td></tr>
             <?php endif; ?>
             </tbody>
         </table>

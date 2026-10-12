@@ -10,9 +10,10 @@ if (is_post()) {
     $backPath = $sameSite ? (parse_url($back, PHP_URL_PATH) ?: '/') : url('contact');
     $backUrl = $backPath . '#contact';
 
-    // Honeypot: bots fill every field. Pretend success.
-    if (input('website') !== '') {
-        flash('success', 'Thank you! Your message has been sent.');
+    // Honeypot: a hidden field only spam bots fill in. Pretend success so the bot learns nothing.
+    // (Its name must stay one that browser autofill ignores — see templates/partials/contact-form.php.)
+    if (input('ks_hp_trap') !== '') {
+        flash('success', "Thank you! Your message has been received. We'll get back to you shortly.");
         redirect($backUrl);
     }
 
@@ -39,7 +40,9 @@ if (is_post()) {
         $errors[] = 'Please write a short message.';
     }
     if (!$errors && !recaptcha_passes()) {
-        $errors[] = 'Please tick the "I\'m not a robot" box.';
+        $errors[] = recaptcha_type() === 'v2'
+            ? 'Please tick the "I\'m not a robot" box.'
+            : "We couldn't confirm you're not a robot. Please try again, or call us instead.";
     }
     if (!$errors && rate_limited('contact', 5, 600)) {
         $errors[] = 'You have sent several messages already. Please wait a few minutes and try again.';
@@ -60,7 +63,7 @@ if (is_post()) {
         "Name: {$data['name']}\nEmail: {$data['email']}\nPhone: {$phone}\n\n{$data['message']}"
     );
 
-    flash('success', 'Thank you, ' . $data['name'] . '! Your message has been received. Our team will get in touch with you soon.');
+    flash('success', 'Thank you, ' . $data['name'] . "! Your message has been received. We'll get back to you shortly.");
     redirect($backUrl);
 }
 

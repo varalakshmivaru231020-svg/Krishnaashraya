@@ -30,10 +30,6 @@ $groups = [
         'stat_cost_per_child' => ['Cost per child / year (₹)', 'number', 'Used on the Donate page to show how long a gift lasts ("covers about 6 days of care"). The home page figures are under Impact Numbers.'],
         'footer_about'  => ['Footer text', 'textarea', ''],
     ],
-    "Spam protection (\"I'm not a robot\")" => [
-        'recaptcha_site_key'   => ['reCAPTCHA site key', 'text', "From google.com/recaptcha/admin (reCAPTCHA v2 → \"I'm not a robot\" checkbox). Leave empty to hide the checkbox."],
-        'recaptcha_secret_key' => ['reCAPTCHA secret key', 'secret', 'Lets the server double-check the tick. Leave empty to keep the saved one.'],
-    ],
     'Social media links' => [
         'social_facebook'  => ['Facebook', 'url', ''],
         'social_instagram' => ['Instagram', 'url', ''],

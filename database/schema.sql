@@ -136,9 +136,12 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Home page slider. Page banners for About / Projects / Activities / Contact / Donate live in settings.
+-- media_type 'video': `video` is the clip and `image` its cover photo (shown while it loads and to visitors who prefer less motion).
 CREATE TABLE IF NOT EXISTS home_slides (
     id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    image      VARCHAR(255) NOT NULL,
+    media_type ENUM('image','video') NOT NULL DEFAULT 'image',
+    image      VARCHAR(255) NULL,
+    video      VARCHAR(255) NULL,
     title      VARCHAR(255) NULL,
     subtitle   VARCHAR(255) NULL,
     sort_order INT NOT NULL DEFAULT 0,

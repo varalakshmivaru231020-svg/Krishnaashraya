@@ -59,6 +59,8 @@ $routes = [
     'admin/impact'             => 'admin/impact.php',
     'admin/about'              => 'admin/about.php',
     'admin/seo'                => 'admin/seo.php',
+    'admin/recaptcha'          => 'admin/recaptcha.php',
+    'admin/popup'              => 'admin/popup.php',
     'admin/account'            => 'admin/account.php',
 ];
 

@@ -216,6 +216,8 @@ $projectsNav = nav_projects();
     </a>
 <?php endif; ?>
 
+<?php partial('site-popup'); ?>
+
 <script src="<?= e(url('assets/js/bootstrap.bundle.min.js')) ?>"></script>
 <script src="https://unpkg.com/sweetalert@2.1.2/dist/sweetalert.min.js"></script>
 <script src="<?= e(url('assets/js/main.js')) ?>"></script>

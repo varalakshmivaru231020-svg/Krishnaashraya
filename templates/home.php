@@ -2,7 +2,7 @@
 /** @var array $projects @var array $testimonials @var array $categories @var array $slides @var array $impact */
 ?>
 <?php if ($slides): ?>
-<div id="heroCarousel" class="carousel slide carousel-fade hero-slider" data-bs-ride="carousel" data-bs-interval="6500" data-bs-pause="false">
+<div id="heroCarousel" class="carousel slide carousel-fade hero-slider" data-bs-ride="carousel" data-bs-interval="6500" data-bs-pause="false"<?= count($slides) === 1 ? ' data-single' : '' ?>>
     <?php if (count($slides) > 1): ?>
         <div class="carousel-indicators">
             <?php foreach ($slides as $i => $slide): ?>
@@ -14,8 +14,15 @@
         <?php foreach ($slides as $i => $slide):
             $lines = array_values(array_filter(array_map('trim', preg_split('/\R/', (string) $slide['title'])), 'strlen'));
             $tag = $i === 0 ? 'h1' : 'div'; ?>
-            <div class="carousel-item<?= $i === 0 ? ' active' : '' ?>">
-                <img src="<?= e(img($slide['image'])) ?>" class="d-block w-100" alt="<?= e(implode(' ', $lines) ?: 'Children at Krishnashraya') ?>"<?= $i ? ' loading="lazy"' : '' ?>>
+            <?php $isVideo = ($slide['media_type'] ?? 'image') === 'video' && $slide['video']; ?>
+            <div class="carousel-item<?= $i === 0 ? ' active' : '' ?><?= $isVideo ? ' is-video' : '' ?>">
+                <?php if ($isVideo): ?>
+                    <video class="d-block w-100 hero-video" muted playsinline preload="<?= $i === 0 ? 'auto' : 'metadata' ?>"<?php if ($slide['image']): ?> poster="<?= e(img($slide['image'])) ?>"<?php endif; ?> aria-label="<?= e(implode(' ', $lines) ?: 'Video from Krishnashraya') ?>">
+                        <source src="<?= e(url($slide['video'])) ?>" type="video/<?= str_ends_with($slide['video'], '.webm') ? 'webm' : 'mp4' ?>">
+                    </video>
+                <?php else: ?>
+                    <img src="<?= e(img($slide['image'])) ?>" class="d-block w-100" alt="<?= e(implode(' ', $lines) ?: 'Children at Krishnashraya') ?>"<?= $i ? ' loading="lazy"' : '' ?>>
+                <?php endif; ?>
                 <div class="carousel-overlay">
                     <div class="container carousel-content">
                         <p class="hero-kicker"><span></span><?= e(setting('site_name', 'Sri Krishnashraya Educational Trust')) ?></p>
@@ -39,6 +46,36 @@
         <?php endforeach; ?>
     </div>
 </div>
+<?php if (array_filter($slides, fn($s) => ($s['media_type'] ?? '') === 'video' && $s['video'])): ?>
+<script>
+    // Video slides: hold the slider while a video plays, then move on when it ends.
+    document.addEventListener('DOMContentLoaded', function () {
+        var el = document.getElementById('heroCarousel');
+        if (!el || !window.bootstrap) return;
+        var carousel = bootstrap.Carousel.getOrCreateInstance(el);
+        var single = el.hasAttribute('data-single');
+        var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function start(item) {
+            el.querySelectorAll('.hero-video').forEach(function (v) { if (!item.contains(v)) v.pause(); });
+            var v = item.querySelector('.hero-video');
+            if (!v) { carousel.cycle(); return; }
+            if (calm && v.poster) { carousel.cycle(); return; }   // still cover photo only
+            carousel.pause();
+            v.loop = single;
+            v.currentTime = 0;
+            var p = v.play();
+            if (p && p.catch) p.catch(function () { carousel.cycle(); });
+        }
+        el.querySelectorAll('.hero-video').forEach(function (v) {
+            v.addEventListener('ended', function () { if (!single) { carousel.next(); carousel.cycle(); } });
+            v.addEventListener('error', function () { carousel.cycle(); }, true);
+        });
+        el.addEventListener('slid.bs.carousel', function (e) { start(e.relatedTarget); });
+        start(el.querySelector('.carousel-item.active'));
+    });
+</script>
+<?php endif; ?>
 <?php endif; ?>
 
 <section id="about" class="section">

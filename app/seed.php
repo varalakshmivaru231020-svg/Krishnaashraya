@@ -189,6 +189,14 @@ function upgrade_database(): void
     ] as $k => $v) {
         db_exec('INSERT IGNORE INTO settings (setting_key, setting_value) VALUES (?, ?)', [$k, $v]);
     }
+
+    // Home slider: a slide can be a video (with an optional cover photo).
+    if (!$has('home_slides', 'media_type')) {
+        db()->exec("ALTER TABLE home_slides
+            ADD COLUMN media_type ENUM('image','video') NOT NULL DEFAULT 'image' AFTER id,
+            MODIFY image VARCHAR(255) NULL,
+            ADD COLUMN video VARCHAR(255) NULL AFTER image");
+    }
 }
 
 /** The four figures of the original home page. Only runs when the list is empty. */

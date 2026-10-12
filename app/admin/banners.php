@@ -15,6 +15,7 @@ if (is_post()) {
     } elseif ($slide && $action === 'delete') {
         db_exec('DELETE FROM home_slides WHERE id = ?', [$slide['id']]);
         delete_upload($slide['image']);
+        delete_upload($slide['video']);
         flash('success', 'Slide deleted.');
     } elseif ($slide && in_array($action, ['up', 'down'], true)) {
         move_row('home_slides', (int) $slide['id'], $action);

@@ -42,7 +42,7 @@ function seo_pages(): array
         return $pages;
     }
     $site = setting('site_name', 'Sri Krishnashraya Educational Trust');
-    $firstSlide = (string) db_value('SELECT image FROM home_slides WHERE is_active = 1 ORDER BY sort_order, id LIMIT 1');
+    $firstSlide = (string) db_value('SELECT image FROM home_slides WHERE is_active = 1 AND image IS NOT NULL AND image <> \'\' ORDER BY sort_order, id LIMIT 1');
     $city = 'Bangalore';
 
     $pages = [
