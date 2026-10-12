@@ -6,8 +6,11 @@ $items = array_values(array_unique(array_merge(['Education', 'Nutrition', 'Shelt
 <div class="marquee-wrap" aria-hidden="true">
     <div class="marquee">
         <div class="marquee-track">
-            <?php for ($copy = 0; $copy < 2; $copy++): foreach ($items as $item): ?>
-                <span><?= e($item) ?></span><i class="bi bi-asterisk"></i>
+            <?php for ($copy = 0; $copy < 4; $copy++): foreach ($items as $item): ?>
+                <div class="marquee-item">
+                    <span><?= e($item) ?></span>
+                    <i class="bi bi-asterisk"></i>
+                </div>
             <?php endforeach; endfor; ?>
         </div>
     </div>
