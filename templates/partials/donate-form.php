@@ -21,8 +21,7 @@ foreach ($ongoingProjects as $p) {
     $towards['project:' . $p['id']] = ['title' => $p['title'], 'summary' => mb_strimwidth((string) $p['summary'], 0, 150, '…'), 'image' => img($p['image'])];
 }
 $selectedTowards = $selectedProject && isset($towards['project:' . $selectedProject]) ? 'project:' . $selectedProject : (array_key_first($towards) ?? '');
-$required = '<span class="field-tag is-req">Required</span>';
-$optional = '<span class="field-tag">Optional</span>';
+$required = '<span class="req-star" aria-hidden="true">*</span>';
 ?>
 <form class="donate-form" id="donateForm" data-cost="<?= (int) setting('stat_cost_per_child', '60000') ?>"
       data-min="<?= $minAmount ?>" data-max="<?= $maxAmount ?>" novalidate>
@@ -39,15 +38,15 @@ $optional = '<span class="field-tag">Optional</span>';
         <div class="row g-3">
             <div class="col-md-6">
                 <label class="form-label" for="d-first">First name <?= $required ?></label>
-                <input type="text" class="form-control" id="d-first" name="first_name" autocomplete="given-name" maxlength="60" placeholder="e.g. Priya" required>
+                <input type="text" class="form-control" id="d-first" name="first_name" autocomplete="given-name" maxlength="60" placeholder="e.g. Priya" required aria-required="true">
                 <div class="field-error" data-error-for="first_name"></div>
             </div>
             <div class="col-md-6">
-                <label class="form-label" for="d-last">Last name <?= $optional ?></label>
+                <label class="form-label" for="d-last">Last name</label>
                 <input type="text" class="form-control" id="d-last" name="last_name" autocomplete="family-name" maxlength="60" placeholder="e.g. Sharma">
             </div>
             <div class="col-md-6">
-                <label class="form-label" for="d-phone">Phone number <?= $optional ?></label>
+                <label class="form-label" for="d-phone">Phone number</label>
                 <div class="input-group input-prefix">
                     <span class="input-group-text">+91</span>
                     <input type="tel" class="form-control" id="d-phone" name="phone" autocomplete="tel-national" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number">
@@ -55,13 +54,13 @@ $optional = '<span class="field-tag">Optional</span>';
                 <div class="field-error" data-error-for="phone"></div>
             </div>
             <div class="col-md-6">
-                <label class="form-label" for="d-email">Email address <?= $optional ?></label>
+                <label class="form-label" for="d-email">Email address</label>
                 <input type="email" class="form-control" id="d-email" name="email" autocomplete="email" maxlength="190" placeholder="For your donation receipt">
                 <div class="field-error" data-error-for="email"></div>
             </div>
             <div class="col-12">
-                <span class="form-label d-block">Gender <?= $optional ?></span>
-                <div class="choice-pills" role="radiogroup" aria-label="Gender (optional)">
+                <span class="form-label d-block">Gender</span>
+                <div class="choice-pills" role="radiogroup" aria-label="Gender">
                     <?php foreach (['male' => 'Male', 'female' => 'Female', 'other' => 'Other', 'prefer_not' => 'Prefer not to say'] as $val => $label): ?>
                         <label class="choice-pill">
                             <input type="radio" name="gender" value="<?= e($val) ?>">
@@ -108,7 +107,7 @@ $optional = '<span class="field-tag">Optional</span>';
         <input type="hidden" name="amount" value="<?= $defaultAmount ?>">
         <div class="field-error" data-error-for="amount"></div>
 
-        <label class="form-label mt-4" for="d-towards">Donate towards <?= $optional ?></label>
+        <label class="form-label mt-4" for="d-towards">Donate towards</label>
         <div class="select-wrap">
             <i class="bi bi-heart-fill select-icon" aria-hidden="true"></i>
             <select class="form-select project-select" id="d-towards" name="towards">
@@ -140,13 +139,13 @@ $optional = '<span class="field-tag">Optional</span>';
 
         <div class="row g-3 mt-1">
             <div class="col-md-6">
-                <label class="form-label" for="d-pan">PAN number <?= $optional ?></label>
+                <label class="form-label" for="d-pan">PAN number</label>
                 <input type="text" class="form-control text-uppercase" id="d-pan" name="pan" maxlength="10" placeholder="ABCDE1234F" autocomplete="off">
                 <div class="field-hint">Only needed for an 80G tax-exemption receipt.</div>
                 <div class="field-error" data-error-for="pan"></div>
             </div>
             <div class="col-md-6">
-                <label class="form-label" for="d-message">Message / In memory of <?= $optional ?></label>
+                <label class="form-label" for="d-message">Message / In memory of</label>
                 <input type="text" class="form-control" id="d-message" name="message" maxlength="500" placeholder="e.g. In loving memory of my father">
             </div>
         </div>

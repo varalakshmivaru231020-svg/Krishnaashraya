@@ -21,6 +21,14 @@ $label = $p['title'] !== '' ? $p['title'] : 'Announcement';
                 <?php if ($link): ?><a href="<?= e($link) ?>" class="site-popup-poster"<?= $external ? ' target="_blank" rel="noopener"' : '' ?>><?php else: ?><div class="site-popup-poster"><?php endif; ?>
                     <img src="<?= e(img($p['image'])) ?>" alt="<?= e($label) ?>">
                 <?= $link ? '</a>' : '</div>' ?>
+                <?php if ($p['title'] !== '' || ($link && $p['button'] !== '')): ?>
+                    <div class="site-popup-body site-popup-foot">
+                        <?php if ($p['title'] !== ''): ?><h2 class="site-popup-title force-font"><?= e($p['title']) ?></h2><?php endif; ?>
+                        <?php if ($link && $p['button'] !== ''): ?>
+                            <a href="<?= e($link) ?>" class="btn-primary-gradient site-popup-btn"<?= $external ? ' target="_blank" rel="noopener"' : '' ?>><?= e($p['button']) ?> <i class="bi bi-arrow-right"></i></a>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             <?php else: ?>
                 <?php if ($p['image']): ?>
                     <div class="site-popup-media"><img src="<?= e(img($p['image'])) ?>" alt=""></div>
@@ -31,7 +39,6 @@ $label = $p['title'] !== '' ? $p['title'] : 'Announcement';
                     <?php if ($link && $p['button'] !== ''): ?>
                         <a href="<?= e($link) ?>" class="btn-primary-gradient site-popup-btn"<?= $external ? ' target="_blank" rel="noopener"' : '' ?>><?= e($p['button']) ?> <i class="bi bi-arrow-right"></i></a>
                     <?php endif; ?>
-                    <button type="button" class="site-popup-later" data-bs-dismiss="modal">Maybe later</button>
                 </div>
             <?php endif; ?>
         </div>

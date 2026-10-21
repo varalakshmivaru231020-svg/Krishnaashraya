@@ -3,13 +3,14 @@
 $admin = current_admin();
 $p = current_path();
 $newEnquiries = $admin ? (int) db_value("SELECT COUNT(*) FROM enquiries WHERE status = 'new'") : 0;
-$toFollow = $admin ? (int) db_value("SELECT COUNT(*) FROM donations WHERE status <> 'paid' AND followed_up = 0") : 0;
+// New donations the team has not looked at yet (a payment still in progress is not counted until it finishes).
+$newDonations = $admin ? (int) db_value("SELECT COUNT(*) FROM donations WHERE seen_by_admin = 0 AND status <> 'pending'") : 0;
 $menu = [
     'Overview' => [
         'admin' => ['Dashboard', 'grid-1x2', 0],
     ],
     'Fundraising' => [
-        'admin/donations' => ['Donations', 'currency-rupee', $toFollow],
+        'admin/donations' => ['Donations', 'currency-rupee', $newDonations],
         'admin/purposes'  => ['Donation Purposes', 'bullseye', 0],
         'admin/enquiries' => ['Enquiries', 'chat-left-text', $newEnquiries],
     ],
@@ -39,12 +40,13 @@ $initials = $admin ? mb_strtoupper(implode('', array_map(fn($w) => mb_substr($w,
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title><?= e(($title ?? 'Admin') . ' · Krishnashraya Admin') ?></title>
+<?php partial('favicon'); ?>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="<?= e(url('assets/css/bootstrap.min.css')) ?>" rel="stylesheet">
-    <link href="<?= e(url('assets/css/admin.css')) ?>" rel="stylesheet">
+    <link href="<?= e(asset('assets/css/bootstrap.min.css')) ?>" rel="stylesheet">
+    <link href="<?= e(asset('assets/css/admin.css')) ?>" rel="stylesheet">
     <?= font_tags() /* so banner and slide previews use the website's heading font */ ?>
 </head>
 <body class="admin">
@@ -123,7 +125,7 @@ $initials = $admin ? mb_strtoupper(implode('', array_map(fn($w) => mb_substr($w,
 <?php else: ?>
     <?= $content ?>
 <?php endif; ?>
-<script src="<?= e(url('assets/js/bootstrap.bundle.min.js')) ?>"></script>
+<script src="<?= e(asset('assets/js/bootstrap.bundle.min.js')) ?>"></script>
 <script>
     // Confirm destructive actions: <form data-confirm="Delete this?">
     document.addEventListener('submit', function (e) {

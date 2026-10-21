@@ -30,6 +30,7 @@ $routes = [
     'donate/webhook'   => 'pages/donate-webhook.php',
     'donate/webhook/cashfree' => 'pages/donate-webhook-cashfree.php',
     'donate/thank-you' => 'pages/donate-thanks.php',
+    'donate/receipt'   => 'pages/donate-receipt.php',
     'install'          => 'pages/install.php',
     'sitemap.xml'      => 'pages/sitemap.php',
     'robots.txt'       => 'pages/robots.php',

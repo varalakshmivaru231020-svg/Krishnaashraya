@@ -584,14 +584,14 @@
     background: linear-gradient(90deg, rgba(8, 12, 24, .82) 0%, rgba(8, 12, 24, .55) 42%, rgba(8, 12, 24, .12) 78%, rgba(8, 12, 24, .05) 100%);
 }
 .hero-slider .carousel-content { opacity: 1; transform: none; transition: none; max-width: 1140px; }
-.hero-slider .hero-title { font-size: clamp(2.3rem, 5.2vw, 4.3rem); line-height: 1.12; margin-bottom: 22px; letter-spacing: -.01em; }
+.hero-slider .hero-title { font-size: clamp(1.9rem, 3.4vw, 3rem); line-height: 1.12; margin-bottom: 22px; letter-spacing: -.01em; }
 .hero-slider .hero-line { display: block; }
 .hero-kicker {
     display: flex; align-items: center; gap: 12px; margin-bottom: 18px;
     color: rgba(255, 255, 255, .85); font-size: .82rem; font-weight: 600; letter-spacing: .18em; text-transform: uppercase;
 }
 .hero-kicker span { width: 42px; height: 2px; background: var(--primary); display: inline-block; }
-.hero-slider .hero-subtitle { font-size: clamp(1.05rem, 1.6vw, 1.35rem); margin-bottom: 34px; max-width: 560px; }
+.hero-slider .hero-subtitle { font-size: clamp(1rem, 1.2vw, 1.15rem); margin-bottom: 34px; max-width: 560px; }
 
 /* Each line slides in from the right, one after another, every time a slide appears. */
 .hero-slider .hero-kicker,
@@ -1000,15 +1000,59 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 .site-popup-close:hover { transform: rotate(90deg); background: #fff; }
 .site-popup-close:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .site-popup-media img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }
-.site-popup-body { padding: 26px 30px 20px; text-align: center; }
+.site-popup-body { padding: 26px 30px 30px; text-align: center; }
 .site-popup-body.no-media { padding-top: 46px; }
 .site-popup-title { font-family: var(--font-head, inherit); font-size: 1.45rem; line-height: 1.3; color: var(--dark); margin: 0 0 10px; }
 .site-popup-text { color: var(--text); font-size: .98rem; line-height: 1.65; margin: 0 0 22px; }
 .site-popup-btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; padding: 13px 30px; }
 .site-popup-btn i { transition: transform .25s var(--ease-out); }
 .site-popup-btn:hover i { transform: translateX(4px); }
-.site-popup-later { display: block; margin: 12px auto 0; padding: 4px 10px; border: 0; background: none; color: #94a3b8; font-size: .85rem; }
-.site-popup-later:hover { color: var(--text); text-decoration: underline; }
 .site-popup-poster { display: block; }
 .site-popup-poster img { display: block; width: 100%; max-height: 86vh; object-fit: contain; background: #fff; }
 @media (prefers-reduced-motion: reduce) { .site-popup.fade .modal-dialog { transform: none; transition: none; } }
+
+/* poster popup: heading + button under the poster */
+.site-popup.is-poster .site-popup-foot { padding: 18px 26px 24px; }
+.site-popup.is-poster .site-popup-foot .site-popup-title { font-size: 1.3rem; margin-bottom: 14px; }
+.site-popup.is-poster .site-popup-foot .site-popup-title:last-child { margin-bottom: 0; }
+.site-popup.is-poster .modal-content:has(.site-popup-foot) .site-popup-poster img { max-height: 64vh; }
+
+/* Required fields: a small red star (no Required / Optional pills) */
+.req-star { color: #dc2626; font-weight: 700; margin-left: 2px; }
+
+/* ---------------------------------------------------------------- mobile layout tidy-up */
+@media (max-width: 767.98px) {
+    .section { padding: 56px 0; }
+    .hero-slider .carousel-item { height: 72vh; min-height: 440px; max-height: 620px; }
+    .hero-slider .carousel-overlay { padding-bottom: 56px; }
+    .hero-slider .hero-title { margin-bottom: 14px; }
+    .hero-slider .hero-subtitle { margin-bottom: 22px; }
+    .hero-slider .hero-buttons { flex-direction: row; flex-wrap: wrap; gap: 10px; }
+    .hero-slider .hero-buttons a { flex: 1 1 140px; padding-left: 14px; padding-right: 14px; }
+
+    /* About: the three key numbers sit side by side */
+    .stats-row { flex-direction: row; justify-content: space-between; gap: 8px; }
+    .stats-row .stat-item { flex: 1; min-width: 0; text-align: center; }
+    .stats-row .stat-number { font-size: 1.9rem; }
+    .stats-row .stat-label { font-size: .8rem; line-height: 1.3; }
+
+    /* About photo: keep the decorations inside the screen */
+    .about-visual { padding: 10px; }
+    .about-ring { width: 120px; height: 120px; top: -6px; right: 0; }
+    .about-dots { width: 100px; height: 100px; left: 0; bottom: 0; }
+    .about-image-card img { height: 300px; }
+    .mission-float-card { width: 100%; margin-top: 20px; }
+
+    /* Project card buttons on one line */
+    .project-content .btn-primary-gradient,
+    .project-content .btn-secondary-outline { margin: 0 8px 10px 0 !important; padding: 12px 24px; }
+
+    /* Impact numbers: two per row */
+    .impact22-section .row { --bs-gutter-x: 12px; }
+    .stat-card11 { padding: 1.4rem .8rem; margin-bottom: 12px; border-radius: 16px; }
+    .stat-icon11 { width: 56px; height: 56px; font-size: 1.4rem; margin-bottom: 10px; }
+    .stat-number11 { font-size: 1.7rem; }
+    .stat-label11 { font-size: .82rem; line-height: 1.3; }
+
+    .vm-card { padding: 30px 22px 26px; }
+}

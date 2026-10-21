@@ -54,6 +54,7 @@ function donation_mark_paid(int $donationId, string $paymentId, ?string $signatu
 
     if ($changed) {
         $d = db_one('SELECT * FROM donations WHERE id = ?', [$donationId]);
+        donation_receipt_no($d);
         notify_admin(
             'New donation: ' . paise_to_inr((int) $d['amount_paise']) . ' from ' . $d['name'],
             "Name: {$d['name']}\nEmail: " . ($d['email'] ?: '-') . "\nPhone: " . ($d['phone'] ?: '-') . "\nAmount: " . paise_to_inr((int) $d['amount_paise'])
@@ -80,4 +81,52 @@ function donation_mark_cancelled(int $donationId, string $reason = 'Donor closed
         "UPDATE donations SET status = 'cancelled', failure_reason = ? WHERE id = ? AND status = 'pending'",
         [mb_substr($reason, 0, 250), $donationId]
     );
+}
+
+/**
+ * How a paid donation was paid, for the receipt: ['mode' => 'UPI', 'txn' => bank / UPI reference or payment ID, 'payment_id' => ...].
+ * Asked from the gateway the first time and then kept with the donation.
+ */
+function donation_payment_details(array $d): array
+{
+    $paymentId = (string) $d['gateway_payment_id'];
+    $out = ['mode' => $d['payment_method'] ?: 'Online', 'txn' => $d['payment_ref'] ?: ($paymentId ?: '—'), 'payment_id' => $paymentId];
+    if ($d['payment_method'] || $d['status'] !== 'paid') {
+        return $out;
+    }
+    $method = $ref = '';
+    try {
+        if ($d['gateway'] === 'razorpay' && str_starts_with($paymentId, 'pay_') && razorpay_configured()) {
+            $p = razorpay_fetch_payment($paymentId);
+            $method = ['upi' => 'UPI', 'card' => 'Card', 'netbanking' => 'Net Banking', 'wallet' => 'Wallet', 'emi' => 'EMI', 'paylater' => 'Pay Later'][$p['method'] ?? ''] ?? ucfirst((string) ($p['method'] ?? ''));
+            if (($p['method'] ?? '') === 'card' && !empty($p['card']['network'])) {
+                $method .= ' (' . $p['card']['network'] . ')';
+            } elseif (($p['method'] ?? '') === 'netbanking' && !empty($p['bank'])) {
+                $method .= ' (' . $p['bank'] . ')';
+            } elseif (($p['method'] ?? '') === 'wallet' && !empty($p['wallet'])) {
+                $method .= ' (' . ucfirst((string) $p['wallet']) . ')';
+            }
+            $a = $p['acquirer_data'] ?? [];
+            $ref = (string) ($a['rrn'] ?? $a['upi_transaction_id'] ?? $a['bank_transaction_id'] ?? $a['auth_code'] ?? '');
+        } elseif ($d['gateway'] === 'cashfree' && $d['gateway_order_id'] && cashfree_configured()) {
+            [$status, $payments] = cashfree_request('GET', '/orders/' . rawurlencode($d['gateway_order_id']) . '/payments');
+            foreach ($status === 200 && is_array($payments) ? $payments : [] as $p) {
+                if (($p['payment_status'] ?? '') === 'SUCCESS') {
+                    $group = (string) ($p['payment_group'] ?? '');
+                    $method = ['upi' => 'UPI', 'credit_card' => 'Credit Card', 'debit_card' => 'Debit Card', 'net_banking' => 'Net Banking', 'wallet' => 'Wallet',
+                               'cardless_emi' => 'EMI', 'credit_card_emi' => 'EMI', 'debit_card_emi' => 'EMI', 'pay_later' => 'Pay Later'][$group] ?? ucwords(str_replace('_', ' ', $group));
+                    $ref = (string) ($p['bank_reference'] ?? '');
+                    break;
+                }
+            }
+        }
+    } catch (Throwable $ex) {
+        error_log('Payment details for receipt failed: ' . $ex->getMessage());
+    }
+    if ($method !== '') {
+        db_exec('UPDATE donations SET payment_method = ?, payment_ref = ? WHERE id = ?', [mb_substr($method, 0, 40), mb_substr($ref, 0, 64) ?: null, $d['id']]);
+        $out['mode'] = $method;
+        $out['txn'] = $ref ?: ($paymentId ?: '—');
+    }
+    return $out;
 }

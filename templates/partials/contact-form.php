@@ -19,15 +19,15 @@ $type = $old['type'] ?? ($_GET['type'] ?? 'general');
     </div>
     <div class="row g-3">
         <div class="col-md-6">
-            <label for="cf-name" class="form-label">Your Name *</label>
+            <label for="cf-name" class="form-label">Your Name <span class="req-star" aria-hidden="true">*</span></label>
             <input type="text" name="name" class="form-control" id="cf-name" maxlength="120" value="<?= e($old['name'] ?? '') ?>" required>
         </div>
         <div class="col-md-6">
-            <label for="cf-email" class="form-label">Email Address *</label>
+            <label for="cf-email" class="form-label">Email Address <span class="req-star" aria-hidden="true">*</span></label>
             <input type="email" name="email" class="form-control" id="cf-email" maxlength="190" value="<?= e($old['email'] ?? '') ?>" required>
         </div>
         <div class="col-md-6">
-            <label for="cf-phone" class="form-label">Phone Number *</label>
+            <label for="cf-phone" class="form-label">Phone Number <span class="req-star" aria-hidden="true">*</span></label>
             <input type="tel" name="phone" class="form-control" id="cf-phone" maxlength="14" inputmode="numeric" value="<?= e($old['phone'] ?? '') ?>" required>
         </div>
         <div class="col-md-6">
@@ -39,7 +39,7 @@ $type = $old['type'] ?? ($_GET['type'] ?? 'general');
             </select>
         </div>
         <div class="col-12">
-            <label for="cf-message" class="form-label">Your Message *</label>
+            <label for="cf-message" class="form-label">Your Message <span class="req-star" aria-hidden="true">*</span></label>
             <textarea class="form-control" id="cf-message" name="message" rows="5" maxlength="3000" required><?= e($old['message'] ?? '') ?></textarea>
         </div>
         <?php if (recaptcha_enabled() && recaptcha_type() === 'v2'): ?>

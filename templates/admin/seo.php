@@ -147,4 +147,4 @@ foreach ($rows as $r) {
 </div>
 
 <script>window.SEO_PAGES = <?= json_encode(array_map(fn($r) => ['key' => $r['key'], 'label' => $r['label'], 'path' => $r['path']], $rows), JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) ?>; window.SEO_BASE = <?= json_encode($base) ?>;</script>
-<script src="<?= e(url('assets/js/seo-audit.js')) ?>"></script>
+<script src="<?= e(asset('assets/js/seo-audit.js')) ?>"></script>

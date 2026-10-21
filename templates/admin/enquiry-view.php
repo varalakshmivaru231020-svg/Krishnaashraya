@@ -1,6 +1,10 @@
 <?php
 /** @var array $q */
 $typeLabel = enquiry_types()[$q['type']] ?? $q['type'];
+$org = setting('site_name', 'Sri Krishnashraya Educational Trust');
+// Ready-to-send email reply: greeting, space to write, signature, and their message quoted underneath.
+$emailBody = "Namaste {$q['name']},\n\nThank you for contacting {$org}.\n\n\n\nWarm regards,\n{$org}\n" . setting('phone_1')
+    . "\n\n----- Your message (" . fmt_date($q['created_at']) . ") -----\n" . mb_strimwidth((string) $q['message'], 0, 1500, '…');
 $wa = $q['phone'] ? 'https://wa.me/91' . $q['phone'] . '?text=' . rawurlencode('Namaste ' . $q['name'] . ', this is ' . setting('site_name') . '. Thank you for contacting us.') : '';
 ?>
 <a href="<?= e(url('admin/enquiries')) ?>" class="small d-inline-block mb-3"><i class="bi bi-arrow-left"></i> All enquiries</a>
@@ -27,7 +31,7 @@ $wa = $q['phone'] ? 'https://wa.me/91' . $q['phone'] . '?text=' . rawurlencode('
         <div class="card mb-4">
             <div class="card-header">Reply</div>
             <div class="card-body d-grid gap-2">
-                <a class="btn btn-outline-primary" href="mailto:<?= e($q['email']) ?>?subject=<?= rawurlencode('Re: your message to ' . setting('site_name')) ?>"><i class="bi bi-envelope"></i> Reply by email</a>
+                <?php partial('../admin/email-button', ['email' => $q['email'], 'subject' => 'Re: your message to ' . $org, 'body' => $emailBody, 'label' => 'Reply by email']); ?>
                 <?php if ($wa): ?>
                     <a class="btn btn-success" href="<?= e($wa) ?>" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i> WhatsApp</a>
                     <a class="btn btn-outline-primary" href="<?= e(tel_href($q['phone'])) ?>"><i class="bi bi-telephone"></i> Call</a>

@@ -13,7 +13,7 @@ DirectoryIndex index.php
 
     # Serve real static files directly.
     RewriteCond %{REQUEST_FILENAME} -f
-    RewriteRule ^(assets|uploads)/ - [L]
+    RewriteRule ^((assets|uploads)/|favicon\.ico$|site\.webmanifest$) - [L]
 
     RewriteRule ^ index.php [L,QSA]
 </IfModule>

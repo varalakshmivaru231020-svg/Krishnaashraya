@@ -27,9 +27,8 @@ $quick = ['donate' => 'Donate', 'contact' => 'Contact', 'about' => 'About Us', '
                         <div class="pp-media" id="ppMedia"<?= $p['image'] ? '' : ' hidden' ?>><img id="ppImg" src="<?= e($p['image'] ? img($p['image']) : '') ?>" alt=""></div>
                         <div class="pp-body" id="ppBody">
                             <div class="pp-title" id="ppTitle"><?= e($p['title']) ?></div>
-                            <div class="pp-text" id="ppText"><?= nl2br(e($p['text'])) ?></div>
+                            <div class="pp-text" id="ppText" data-show="card"<?= $isPoster ? ' hidden' : '' ?>><?= nl2br(e($p['text'])) ?></div>
                             <span class="pp-btn" id="ppBtn"<?= $p['button'] && $p['link'] ? '' : ' hidden' ?>><?= e($p['button']) ?></span>
-                            <span class="pp-later">Maybe later</span>
                         </div>
                         <div class="pp-empty" id="ppEmpty" hidden><i class="bi bi-image"></i> Choose a photo for the poster</div>
                     </div>
@@ -54,7 +53,7 @@ $quick = ['donate' => 'Donate', 'contact' => 'Contact', 'about' => 'About Us', '
                             <input type="radio" class="btn-check" name="layout" id="ly_poster" value="poster"<?= $isPoster ? ' checked' : '' ?>>
                             <label for="ly_poster"><i class="bi bi-file-image"></i> Poster only</label>
                         </div>
-                        <div class="form-text" id="layoutHelp"><?= $isPoster ? 'Just your photo or flyer — the whole picture is clickable when a link is set.' : 'A photo on top, then your heading, message and button.' ?></div>
+                        <div class="form-text" id="layoutHelp"><?= $isPoster ? 'Your poster or flyer, with a heading and a button under it. The poster is clickable too when a link is set.' : 'A photo on top, then your heading, message and button.' ?></div>
                     </div>
 
                     <div class="mb-4">
@@ -73,23 +72,21 @@ $quick = ['donate' => 'Donate', 'contact' => 'Contact', 'about' => 'About Us', '
                         <?php endif; ?>
                     </div>
 
-                    <div data-show="card"<?= $isPoster ? ' hidden' : '' ?>>
-                        <div class="mb-3">
-                            <label class="form-label" for="title">Heading</label>
-                            <input class="form-control" id="title" name="title" maxlength="120" value="<?= e($p['title']) ?>">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" for="text">Message</label>
-                            <textarea class="form-control" id="text" name="text" rows="3" maxlength="500"><?= e($p['text']) ?></textarea>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="title">Heading</label>
+                        <input class="form-control" id="title" name="title" maxlength="120" value="<?= e($p['title']) ?>">
+                    </div>
+                    <div class="mb-3" data-show="card"<?= $isPoster ? ' hidden' : '' ?>>
+                        <label class="form-label" for="text">Message</label>
+                        <textarea class="form-control" id="text" name="text" rows="3" maxlength="500"><?= e($p['text']) ?></textarea>
                     </div>
                     <div class="row g-3">
-                        <div class="col-sm-5" data-show="card"<?= $isPoster ? ' hidden' : '' ?>>
+                        <div class="col-sm-5">
                             <label class="form-label" for="button">Button text</label>
                             <input class="form-control" id="button" name="button" maxlength="40" value="<?= e($p['button']) ?>" placeholder="Donate Now">
                         </div>
                         <div class="col">
-                            <label class="form-label" for="link"><span data-show="card"<?= $isPoster ? ' hidden' : '' ?>>Button link</span><span data-show="poster"<?= $isPoster ? '' : ' hidden' ?>>Link when the poster is clicked</span> <span class="opt">optional</span></label>
+                            <label class="form-label" for="link">Button link <span class="opt" data-show="poster"<?= $isPoster ? '' : ' hidden' ?>>also used when the poster is clicked</span></label>
                             <input class="form-control" id="link" name="link" maxlength="255" value="<?= e($p['link']) ?>" placeholder="donate">
                         </div>
                     </div>
@@ -151,21 +148,21 @@ $quick = ['donate' => 'Donate', 'contact' => 'Contact', 'about' => 'About Us', '
         var body = document.getElementById('ppBody'), empty = document.getElementById('ppEmpty'), btn = document.getElementById('ppBtn');
         var file = document.getElementById('image'), remove = document.getElementById('remove_image');
         var saved = pimg.getAttribute('src');
-        var help = { card: 'A photo on top, then your heading, message and button.', poster: 'Just your photo or flyer — the whole picture is clickable when a link is set.' };
+        var help = { card: 'A photo on top, then your heading, message and button.', poster: 'Your poster or flyer, with a heading and a button under it. The poster is clickable too when a link is set.' };
 
         function layout() { return document.getElementById('ly_poster').checked ? 'poster' : 'card'; }
         function photo() { return pimg.getAttribute('src') || ''; }
         function refresh() {
             var l = layout();
+            btn.hidden = !(document.getElementById('button').value.trim() && document.getElementById('link').value.trim());
             document.querySelectorAll('[data-show]').forEach(function (el) { el.hidden = el.getAttribute('data-show') !== l; });
             document.getElementById('layoutHelp').textContent = help[l];
             box.classList.toggle('is-poster', l === 'poster');
             media.hidden = !photo();
-            body.hidden = l === 'poster';
+            body.hidden = l === 'poster' && !document.getElementById('title').value.trim() && btn.hidden;
             empty.hidden = !(l === 'poster' && !photo());
-            btn.hidden = !(document.getElementById('button').value.trim() && document.getElementById('link').value.trim());
         }
-        document.getElementById('title').addEventListener('input', function (e) { document.getElementById('ppTitle').textContent = e.target.value; });
+        document.getElementById('title').addEventListener('input', function (e) { document.getElementById('ppTitle').textContent = e.target.value; refresh(); });
         document.getElementById('text').addEventListener('input', function (e) {
             var t = document.getElementById('ppText'); t.textContent = '';
             e.target.value.split('\n').forEach(function (line, i) { if (i) t.appendChild(document.createElement('br')); t.appendChild(document.createTextNode(line)); });

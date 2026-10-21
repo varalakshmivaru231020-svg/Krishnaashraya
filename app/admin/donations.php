@@ -18,7 +18,14 @@ $donations = db_all(
     $params
 );
 
+// Opening the list counts as reading the new donations: remember which they were (shown as "New"), then clear the badge.
+$newIds = array_map('intval', array_column(db_all("SELECT id FROM donations WHERE seen_by_admin = 0 AND status <> 'pending'"), 'id'));
+if ($newIds) {
+    db_exec("UPDATE donations SET seen_by_admin = 1 WHERE seen_by_admin = 0 AND status <> 'pending'");
+}
+
 admin_render('donations', [
+    'newIds'    => $newIds,
     'title'     => 'Donations',
     'donations' => $donations,
     'filters'   => $filters,

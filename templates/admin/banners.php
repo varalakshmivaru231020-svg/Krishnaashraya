@@ -1,5 +1,6 @@
 <?php /** @var array $slides @var array $pages @var array $ctas */
 $visible = count(array_filter($slides, fn($s) => $s['is_active']));
+$processing = count(array_filter($slides, fn($s) => ($s['video_status'] ?? '') === 'processing'));
 ?>
 <ul class="nav admin-tabs mb-4" role="tablist">
     <li class="nav-item" role="presentation">
@@ -48,8 +49,9 @@ $visible = count(array_filter($slides, fn($s) => $s['is_active']));
                                             <?php if ($isVid): ?><span class="slide-thumb-play"><i class="bi bi-play-fill"></i></span><?php endif; ?>
                                         </a>
                                         <div class="min-w-0">
-                                            <a href="<?= e(url('admin/banners/slide?id=' . $s['id'])) ?>" class="row-link fw-semibold d-block text-truncate"><?php if ($isVid): ?><span class="media-tag"><i class="bi bi-camera-video-fill"></i> Video</span><?php endif; ?><?= e(implode(' ', array_map('trim', $lines)) ?: 'No heading') ?></a>
+                                            <a href="<?= e(url('admin/banners/slide?id=' . $s['id'])) ?>" class="row-link fw-semibold d-block text-truncate"><?php if ($isVid): ?><span class="media-tag"><i class="bi bi-camera-video-fill"></i> Video</span><?php endif; ?><?php if ($isVid && $s['video_status'] === 'processing'): ?><span class="media-tag is-busy"><span class="spinner-border spinner-border-sm"></span> Making web-ready…</span><?php elseif ($isVid && $s['video_status'] === 'failed'): ?><span class="media-tag is-bad" title="<?= e((string) $s['video_note']) ?>"><i class="bi bi-exclamation-triangle-fill"></i> Video problem</span><?php endif; ?><?= e(implode(' ', array_map('trim', $lines)) ?: 'No heading') ?></a>
                                             <div class="small text-muted text-truncate"><?= e($s['subtitle'] ?: 'No sub-heading') ?></div>
+                                            <?php if ($isVid && $s['video_note']): ?><div class="small text-truncate <?= $s['video_status'] === 'failed' ? 'text-danger' : 'text-success' ?>"><?= e($s['video_note']) ?></div><?php endif; ?>
                                         </div>
                                     </div>
                                 </td>
@@ -131,6 +133,12 @@ $visible = count(array_filter($slides, fn($s) => $s['is_active']));
     </div>
 </div>
 
+<?php if ($processing): ?>
+<script>
+    // A video is being made web-ready: refresh until it is done (only while this tab is visible).
+    setInterval(function () { if (!document.hidden) location.reload(); }, 8000);
+</script>
+<?php endif; ?>
 <script>
     // Remember the open tab (so returning from an edit screen lands on the same tab).
     (function () {

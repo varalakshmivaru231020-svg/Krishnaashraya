@@ -11,6 +11,7 @@ if ($id && !$slide) {
 }
 
 $errors = [];
+$ajax = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest';
 $form = $slide ?? ['media_type' => 'image', 'image' => '', 'video' => '', 'title' => "There Is No Joy\nGreater than the Joy\nof Giving", 'subtitle' => 'Empowering Lives Through Education and Care', 'is_active' => 1];
 
 if (is_post()) {
@@ -23,7 +24,11 @@ if (is_post()) {
 
     // A request bigger than post_max_size arrives with $_POST and $_FILES empty.
     if (empty($_POST) && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
-        flash('error', 'The file is too large. The limit is ' . round(video_upload_limit() / 1024 ** 2) . ' MB — please compress the video and try again.');
+        $tooBig = 'The file is too large. The limit is ' . round(video_upload_limit() / 1024 ** 2) . ' MB — please compress the video and try again.';
+        if ($ajax) {
+            json_response(['ok' => false, 'errors' => [$tooBig]]);
+        }
+        flash('error', $tooBig);
         redirect('admin/banners/slide' . ($id ? '?id=' . $id : ''));
     }
 
@@ -55,15 +60,25 @@ if (is_post()) {
         }
     }
 
+    // A newly uploaded video is shrunk on the server first (when it can), so visitors never download the big original.
+    $optimize = $isVideo && $newVideo && video_can_optimize();
+    $status = $optimize ? 'processing' : ($isVideo && !$newVideo ? ($slide['video_status'] ?? 'ready') : 'ready');
+    $note = $optimize ? null : ($isVideo && !$newVideo ? ($slide['video_note'] ?? null) : null);
+
     if ($errors) {
         // Don't keep half-saved files from a failed save.
         delete_upload($newImage);
         delete_upload($newVideo);
+        if ($ajax) {
+            json_response(['ok' => false, 'errors' => $errors]);
+        }
     } else {
         if ($slide) {
             db_exec(
-                'UPDATE home_slides SET media_type = ?, image = ?, video = ?, title = ?, subtitle = ?, is_active = ? WHERE id = ?',
-                [$form['media_type'], $image, $video, $form['title'] ?: null, $form['subtitle'] ?: null, $form['is_active'], $id]
+                'UPDATE home_slides SET media_type = ?, image = ?, video = ?, video_status = ?, video_note = ?, video_queued_at = ?,
+                        title = ?, subtitle = ?, is_active = ? WHERE id = ?',
+                [$form['media_type'], $image, $video, $status, $note, $optimize ? date('Y-m-d H:i:s') : ($slide['video_queued_at'] ?? null),
+                 $form['title'] ?: null, $form['subtitle'] ?: null, $form['is_active'], $id]
             );
             if ($slide['image'] && $slide['image'] !== $image) {
                 delete_upload($slide['image']);
@@ -71,14 +86,22 @@ if (is_post()) {
             if ($slide['video'] && $slide['video'] !== $video) {
                 delete_upload($slide['video']);
             }
-            flash('success', 'Slide saved.');
+            $slideId = $id;
+            flash('success', $optimize ? 'Slide saved. The video is being made web-ready — this takes a minute or two.' : 'Slide saved.');
         } else {
             $order = (int) db_value('SELECT COALESCE(MAX(sort_order), 0) FROM home_slides') + 10;
             db_exec(
-                'INSERT INTO home_slides (media_type, image, video, title, subtitle, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [$form['media_type'], $image, $video, $form['title'] ?: null, $form['subtitle'] ?: null, $order, $form['is_active']]
+                'INSERT INTO home_slides (media_type, image, video, video_status, video_queued_at, title, subtitle, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [$form['media_type'], $image, $video, $status, $optimize ? date('Y-m-d H:i:s') : null, $form['title'] ?: null, $form['subtitle'] ?: null, $order, $form['is_active']]
             );
-            flash('success', 'Slide added to the home page slider.');
+            $slideId = (int) db()->lastInsertId();
+            flash('success', $optimize ? 'Slide added. The video is being made web-ready — this takes a minute or two.' : 'Slide added to the home page slider.');
+        }
+        if ($optimize) {
+            video_optimize_in_background($slideId);
+        }
+        if ($ajax) {
+            json_response(['ok' => true, 'redirect' => url('admin/banners')]);
         }
         redirect('admin/banners');
     }

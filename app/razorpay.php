@@ -99,6 +99,25 @@ function razorpay_create_order(int $amountPaise, string $receipt, array $notes =
     return $data;
 }
 
+/** One payment's details from Razorpay (method, bank / UPI reference ...). Throws on failure. */
+function razorpay_fetch_payment(string $paymentId): array
+{
+    $ch = curl_init('https://api.razorpay.com/v1/payments/' . rawurlencode($paymentId));
+    curl_setopt_array($ch, [
+        CURLOPT_USERPWD        => razorpay_key_id() . ':' . razorpay_key_secret(),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 10,
+    ]);
+    $body = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    $data = json_decode((string) $body, true);
+    if ($status !== 200 || empty($data['id'])) {
+        throw new RuntimeException('Razorpay error: ' . ($data['error']['description'] ?? ('HTTP ' . $status)));
+    }
+    return $data;
+}
+
 /** Checks the signature Razorpay Checkout returns to the browser after a successful payment. */
 function razorpay_payment_signature_valid(string $orderId, string $paymentId, string $signature): bool
 {

@@ -69,7 +69,7 @@ $shareText = rawurlencode("I just donated to {$org} to support food, shelter and
                         <a href="<?= e(url('contact?type=donation')) ?>">send us your email and PAN</a> with reference <strong><?= e(strtoupper($donation['ref'])) ?></strong>.</p>
                 <?php endif; ?>
                 <div class="thanks-actions">
-                    <button type="button" class="btn-outline-gradient" onclick="window.print()"><i class="bi bi-printer"></i> Print / Save receipt</button>
+                    <a class="btn-outline-gradient" href="<?= e(url('donate/receipt?ref=' . $donation['ref'])) ?>" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf"></i> Download receipt</a>
                     <a class="btn-outline-gradient" href="https://wa.me/?text=<?= $shareText ?>" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i> Share with friends</a>
                     <a class="btn-primary-gradient" href="<?= e(url('')) ?>"><i class="bi bi-house"></i> Back to Home</a>
                 </div>

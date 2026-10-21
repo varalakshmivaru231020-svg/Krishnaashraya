@@ -7,6 +7,12 @@ $wa = 'https://wa.me/91' . $d['phone'] . '?text=' . rawurlencode(
         ? 'Thank you so much for your donation of ' . paise_to_inr((int) $d['amount_paise']) . '.'
         : 'Thank you for wanting to support our children. We noticed your donation of ' . paise_to_inr((int) $d['amount_paise']) . ' was not completed - can we help?')
 );
+$org = setting('site_name', 'Sri Krishnashraya Educational Trust');
+// Ready-to-send thank-you email, with the receipt link once the donation is paid.
+$emailBody = "Dear {$d['name']},\n\nThank you for your generous donation of " . paise_to_inr((int) $d['amount_paise']) . ' towards ' . donation_towards($d) . " to {$org}. "
+    . "Your kindness helps our children with food, a safe home and education.\n\n"
+    . ($d['status'] === 'paid' ? "You can download your receipt here:\n" . site_origin() . url('donate/receipt?ref=' . $d['ref']) . "\n\n" : '')
+    . "Warm regards,\n{$org}\n" . setting('phone_1');
 ?>
 <a href="<?= e(url('admin/donations')) ?>" class="small d-inline-block mb-3"><i class="bi bi-arrow-left"></i> All donations</a>
 
@@ -16,6 +22,9 @@ $wa = 'https://wa.me/91' . $d['phone'] . '?text=' . rawurlencode(
             <div class="card-header d-flex align-items-center">
                 <?= e(paise_to_inr((int) $d['amount_paise'])) ?>
                 <span class="ms-2"><?php partial('../admin/status-badge', ['status' => $d['status']]); ?></span>
+                <?php if ($d['status'] === 'paid'): ?>
+                    <a class="btn btn-sm btn-outline-primary ms-auto" href="<?= e(url('donate/receipt?ref=' . $d['ref'])) ?>" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf"></i> Receipt</a>
+                <?php endif; ?>
             </div>
             <div class="card-body">
                 <dl class="detail">
@@ -52,7 +61,7 @@ $wa = 'https://wa.me/91' . $d['phone'] . '?text=' . rawurlencode(
                     <a class="btn btn-outline-primary" href="<?= e(tel_href($d['phone'])) ?>"><i class="bi bi-telephone"></i> Call</a>
                 <?php endif; ?>
                 <?php if ($d['email']): ?>
-                    <a class="btn btn-outline-primary" href="mailto:<?= e($d['email']) ?>?subject=<?= rawurlencode('Thank you from ' . setting('site_name')) ?>"><i class="bi bi-envelope"></i> Email</a>
+                    <?php partial('../admin/email-button', ['email' => $d['email'], 'subject' => 'Thank you from ' . $org, 'body' => $emailBody, 'label' => 'Email ' . $d['email']]); ?>
                 <?php endif; ?>
                 <?php if (!$d['phone'] && !$d['email']): ?>
                     <p class="text-muted small mb-0">This donor chose not to share a phone number or email address.</p>

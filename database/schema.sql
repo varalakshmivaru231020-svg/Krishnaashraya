@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS donation_purposes (
 CREATE TABLE IF NOT EXISTS donations (
     id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     ref                 CHAR(16) NOT NULL UNIQUE,
+    receipt_no          VARCHAR(40) NULL UNIQUE,   -- given when the donation is paid, e.g. SKET/WEB/2026/00001
     name                VARCHAR(120) NOT NULL,
     email               VARCHAR(190) NULL,
     phone               VARCHAR(20) NULL,
@@ -99,8 +100,11 @@ CREATE TABLE IF NOT EXISTS donations (
     gateway_order_id    VARCHAR(64) NULL,
     gateway_payment_id  VARCHAR(64) NULL,
     gateway_signature   VARCHAR(128) NULL,
+    payment_method      VARCHAR(40) NULL,          -- e.g. UPI, Card, Net Banking (asked from the gateway for the receipt)
+    payment_ref         VARCHAR(64) NULL,          -- bank / UPI reference number of the payment
     failure_reason      VARCHAR(255) NULL,
     followed_up         TINYINT(1) NOT NULL DEFAULT 0,
+    seen_by_admin       TINYINT(1) NOT NULL DEFAULT 0,   -- 0 = new: counted on the Donations menu badge until the team opens it
     admin_notes         TEXT NULL,
     ip                  VARCHAR(45) NULL,
     created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -142,6 +146,9 @@ CREATE TABLE IF NOT EXISTS home_slides (
     media_type ENUM('image','video') NOT NULL DEFAULT 'image',
     image      VARCHAR(255) NULL,
     video      VARCHAR(255) NULL,
+    video_status VARCHAR(20) NOT NULL DEFAULT 'ready',   -- processing while the server shrinks a new video; failed if it could not
+    video_note   VARCHAR(255) NULL,
+    video_queued_at DATETIME NULL,
     title      VARCHAR(255) NULL,
     subtitle   VARCHAR(255) NULL,
     sort_order INT NOT NULL DEFAULT 0,

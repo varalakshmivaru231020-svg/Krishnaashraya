@@ -134,15 +134,21 @@
         if (field) field.classList.remove('is-invalid');
     }
 
+    // Marks every problem field, then shows one alert for the first one and puts the cursor there.
     function showErrors(errors) {
-        var first = null;
+        var first = null, firstMsg = '';
         Object.keys(errors).forEach(function (name) {
             setFieldError(name, errors[name]);
-            first = first || fieldFor(name);
+            if (!first) { first = fieldFor(name); firstMsg = errors[name]; }
         });
-        if (first) {
-            first.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            if (first.focus) first.focus({ preventScroll: true });
+        if (!first) return;
+        first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        function focusField() { if (first.focus) first.focus({ preventScroll: true }); }
+        if (window.swal) {
+            swal({ title: 'Please check', text: firstMsg, icon: 'warning', button: 'OK' }).then(focusField);
+        } else {
+            alert(firstMsg);
+            focusField();
         }
     }
 
@@ -164,11 +170,11 @@
         if (!data.first_name.trim()) errors.first_name = 'Please enter your first name.';
         if (data.phone && !/^[6-9]\d{9}$/.test(data.phone)) errors.phone = 'Please enter a valid 10-digit mobile number, or leave it empty.';
         if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) errors.email = 'Please enter a valid email address, or leave it empty.';
-        if (data.pan && !/^[A-Za-z]{5}[0-9]{4}[A-Za-z]$/.test(data.pan.trim())) errors.pan = 'PAN should look like ABCDE1234F, or leave it empty.';
         if (!amountField.value.trim()) errors.amount = 'Please choose an amount, or enter your own.';
         else if (!/^\d+$/.test(amountField.value.trim())) errors.amount = 'Please enter the amount in whole rupees, using numbers only.';
         else if (a < MIN) errors.amount = 'The minimum donation is ' + inr(MIN) + '.';
         else if (a > MAX) errors.amount = 'For donations above ' + inr(MAX) + ', please contact us or use a bank transfer.';
+        if (data.pan && !/^[A-Za-z]{5}[0-9]{4}[A-Za-z]$/.test(data.pan.trim())) errors.pan = 'PAN should look like ABCDE1234F, or leave it empty.';
         return errors;
     }
 

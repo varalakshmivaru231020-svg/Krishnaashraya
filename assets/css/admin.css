@@ -450,14 +450,46 @@ body.admin .login-visual h2 { color: #fff; font-size: 2.4rem; font-weight: 800; 
 .pp-media img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }
 .pp-box.is-poster .pp-media img { aspect-ratio: auto; max-height: 460px; object-fit: contain; }
 .pp-media[hidden], .pp-body[hidden], .pp-empty[hidden], .pp-btn[hidden] { display: none !important; }
-.pp-body { padding: 20px 24px 16px; text-align: center; }
+.pp-body { padding: 20px 24px 22px; text-align: center; }
 .pp-media[hidden] + .pp-body { padding-top: 40px; }
 .pp-title { font-family: var(--font-head, Merriweather, Georgia, serif); font-weight: 700; font-size: 1.15rem; line-height: 1.3; color: #0f172a; margin-bottom: 8px; word-break: break-word; }
 .pp-text { color: #475569; font-size: 13.5px; line-height: 1.6; margin-bottom: 16px; word-break: break-word; }
 .pp-btn { display: inline-block; padding: 9px 22px; border-radius: 30px; background: var(--a-gradient); color: #fff; font-weight: 600; font-size: 13px; }
-.pp-later { display: block; margin-top: 10px; color: #94a3b8; font-size: 12px; }
 .pp-empty { display: grid; place-items: center; height: 300px; color: #94a3b8; font-weight: 600; background: #f1f5f9; }
 .pp-empty i { font-size: 28px; display: block; margin-bottom: 6px; }
 .link-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .link-chip { border: 1px solid var(--a-line, #e2e8f0); background: #fff; border-radius: 20px; padding: 3px 12px; font-size: 12px; font-weight: 600; color: #475569; transition: border-color .15s, color .15s; }
 .link-chip:hover { border-color: #f97316; color: #c2410c; }
+
+.pp-text[hidden] { display: none !important; }
+.pp-box.is-poster .pp-body { padding-top: 16px; padding-bottom: 18px; }
+.pp-box.is-poster .pp-title { margin-bottom: 12px; }
+.pp-box.is-poster:has(.pp-body:not([hidden])) .pp-media img { max-height: 340px; }
+
+/* Reply buttons: keep button text colours (links in the admin are orange by default) */
+body.admin a.btn-success, body.admin a.btn-success:hover, body.admin a.btn-success:focus { color: #fff; }
+body.admin a.btn-success:hover { background: #15803d; }
+.email-btn { display: flex; }
+.email-btn > .btn:first-child { flex: 1; }
+.email-btn .dropdown-toggle-split { flex: 0 0 auto; padding-left: 14px; padding-right: 14px; }
+.email-btn .dropdown-item { font-size: 14px; }
+
+/* ---------------------------------------------------------------- slider videos: web-ready status + upload progress */
+.media-tag.is-busy { background: #eff6ff; color: #1d4ed8; }
+.media-tag.is-busy .spinner-border { width: 10px; height: 10px; border-width: 2px; }
+.media-tag.is-bad { background: #fef2f2; color: #b91c1c; }
+.video-state { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; margin-bottom: 10px; border-radius: 10px; font-size: 13px; line-height: 1.45; }
+.video-state i { font-size: 16px; line-height: 1.2; }
+.video-state.is-busy { background: #eff6ff; color: #1e40af; }
+.video-state.is-ok { background: #f0fdf4; color: #166534; }
+.video-state.is-bad { background: #fef2f2; color: #991b1b; }
+.upload-progress { margin-top: 14px; padding: 14px 16px; border: 1px solid var(--a-line, #e2e8f0); border-radius: 12px; background: #f8fafc; }
+.upload-progress[hidden] { display: none; }
+.upload-progress-top { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.upload-progress-top span:last-child { color: #64748b; font-weight: 500; }
+.upload-bar { height: 8px; border-radius: 8px; background: #e2e8f0; overflow: hidden; }
+.upload-bar span { display: block; height: 100%; width: 0; border-radius: 8px; background: linear-gradient(90deg, #ff6b00, #e53935); transition: width .3s ease; }
+.upload-progress small { display: block; margin-top: 8px; color: #64748b; }
+
+/* Donations list: rows that were new when the page was opened */
+.new-tag { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 20px; background: #fff1e6; color: #c2410c; font-size: 10.5px; font-weight: 800; letter-spacing: .3px; text-transform: uppercase; vertical-align: 2px; }

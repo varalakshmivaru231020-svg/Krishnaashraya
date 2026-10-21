@@ -190,6 +190,28 @@ function upgrade_database(): void
         db_exec('INSERT IGNORE INTO settings (setting_key, setting_value) VALUES (?, ?)', [$k, $v]);
     }
 
+    // Donation receipts: each paid donation gets its own receipt number; the trust details printed on it are editable.
+    if (!$has('donations', 'receipt_no')) {
+        db()->exec('ALTER TABLE donations ADD COLUMN receipt_no VARCHAR(40) NULL AFTER ref, ADD UNIQUE KEY uq_donations_receipt (receipt_no)');
+    }
+    // The Donations menu badge counts donations the team has not looked at yet (existing ones count as seen).
+    if (!$has('donations', 'seen_by_admin')) {
+        db()->exec('ALTER TABLE donations ADD COLUMN seen_by_admin TINYINT(1) NOT NULL DEFAULT 0 AFTER followed_up');
+        db()->exec('UPDATE donations SET seen_by_admin = 1');
+    }
+
+    // Slider videos are shrunk on the server after upload.
+    if (!$has('home_slides', 'video_status')) {
+        db()->exec("ALTER TABLE home_slides ADD COLUMN video_status VARCHAR(20) NOT NULL DEFAULT 'ready' AFTER video,
+            ADD COLUMN video_note VARCHAR(255) NULL AFTER video_status, ADD COLUMN video_queued_at DATETIME NULL AFTER video_note");
+    }
+    if (!$has('donations', 'payment_method')) {
+        db()->exec('ALTER TABLE donations ADD COLUMN payment_method VARCHAR(40) NULL AFTER gateway_signature, ADD COLUMN payment_ref VARCHAR(64) NULL AFTER payment_method');
+    }
+    foreach (receipt_defaults() as $k => $v) {
+        db_exec('INSERT IGNORE INTO settings (setting_key, setting_value) VALUES (?, ?)', [$k, $v]);
+    }
+
     // Home slider: a slide can be a video (with an optional cover photo).
     if (!$has('home_slides', 'media_type')) {
         db()->exec("ALTER TABLE home_slides

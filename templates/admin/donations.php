@@ -77,7 +77,7 @@
                 <tr>
                     <td class="small text-muted text-nowrap"><?= e(fmt_date($d['created_at'], 'd M Y')) ?><br><?= e(fmt_date($d['created_at'], 'h:i A')) ?></td>
                     <td>
-                        <a class="row-link fw-semibold" href="<?= e(url('admin/donations/view?id=' . $d['id'])) ?>"><?= e($d['name']) ?></a>
+                        <a class="row-link fw-semibold" href="<?= e(url('admin/donations/view?id=' . $d['id'])) ?>"><?= e($d['name']) ?></a><?php if (in_array((int) $d['id'], $newIds ?? [], true)): ?> <span class="new-tag">New</span><?php endif; ?>
                         <div class="small text-muted"><?= e($d['email'] ?: '') ?></div>
                     </td>
                     <td class="text-nowrap"><?= $d['phone'] ? '<a class="row-link" href="' . e(tel_href($d['phone'])) . '">' . e($d['phone']) . '</a>' : '<span class="text-muted">—</span>' ?></td>

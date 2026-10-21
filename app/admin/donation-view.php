@@ -7,6 +7,9 @@ if (!$donation) {
     flash('error', 'That donation was not found.');
     redirect('admin/donations');
 }
+if (!$donation['seen_by_admin'] && $donation['status'] !== 'pending') {
+    db_exec('UPDATE donations SET seen_by_admin = 1 WHERE id = ?', [$id]);
+}
 
 if (is_post()) {
     csrf_check();

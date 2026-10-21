@@ -112,7 +112,7 @@
         <h2 class="stats-heading11"><?= e(setting('impact_heading', 'Your Contribution Creates Measurable Change')) ?></h2>
         <div class="row justify-content-center">
             <?php foreach ($impact as $stat): ?>
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-3 col-md-6 col-6">
                     <div class="stat-card11">
                         <div class="stat-icon11"><i class="bi bi-<?= e($stat['icon']) ?>"></i></div>
                         <div class="stat-number11" data-target="<?= (int) $stat['value'] ?>" data-prefix="<?= e($stat['prefix']) ?>" data-suffix="<?= e($stat['suffix']) ?>"><?= e(($stat['prefix'] ?? '') . '0') ?></div>

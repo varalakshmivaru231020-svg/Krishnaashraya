@@ -33,8 +33,7 @@ $projectsNav = nav_projects();
     <meta property="og:locale" content="en_IN">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="theme-color" content="#ff6b00">
-    <link rel="icon" type="image/webp" href="<?= e(url('assets/images/sket-logo-web.webp')) ?>">
-    <link rel="apple-touch-icon" href="<?= e(url('assets/images/sket-logo-web.webp')) ?>">
+<?php partial('favicon'); ?>
     <?php if (current_path() === ''): ?>
         <script type="application/ld+json"><?= seo_organisation_jsonld() ?></script>
     <?php endif; ?>
@@ -60,9 +59,9 @@ $projectsNav = nav_projects();
     <?= font_tags() ?>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <link href="<?= e(url('assets/css/bootstrap.min.css')) ?>" rel="stylesheet">
-    <link rel="stylesheet" href="<?= e(url('assets/css/styles.css')) ?>">
-    <link rel="stylesheet" href="<?= e(url('assets/css/site.css')) ?>">
+    <link href="<?= e(asset('assets/css/bootstrap.min.css')) ?>" rel="stylesheet">
+    <link rel="stylesheet" href="<?= e(asset('assets/css/styles.css')) ?>">
+    <link rel="stylesheet" href="<?= e(asset('assets/css/site.css')) ?>">
 </head>
 <body>
 
@@ -205,11 +204,6 @@ $projectsNav = nav_projects();
     <i class="bi bi-arrow-up"></i>
 </div>
 
-<a href="<?= e(url('our-activities')) ?>" class="floating-donate" id="floatingDonate">
-    <i class="bi bi-heart-fill"></i>
-    <span>Our Activities</span>
-</a>
-
 <?php if ($waNumber = preg_replace('/\D/', '', setting('whatsapp_number'))): ?>
     <a href="https://wa.me/<?= e($waNumber) ?>?text=<?= rawurlencode('Hello ' . $siteName . ', I would like to know more.') ?>" class="whatsapp-float" target="_blank" rel="noopener" aria-label="Chat with us on WhatsApp" title="Chat with us on WhatsApp">
         <i class="bi bi-whatsapp"></i>
@@ -218,16 +212,16 @@ $projectsNav = nav_projects();
 
 <?php partial('site-popup'); ?>
 
-<script src="<?= e(url('assets/js/bootstrap.bundle.min.js')) ?>"></script>
+<script src="<?= e(asset('assets/js/bootstrap.bundle.min.js')) ?>"></script>
 <script src="https://unpkg.com/sweetalert@2.1.2/dist/sweetalert.min.js"></script>
-<script src="<?= e(url('assets/js/main.js')) ?>"></script>
+<script src="<?= e(asset('assets/js/main.js')) ?>"></script>
 <?php if (current_path() === 'donate'): ?>
     <?php if (active_gateway() === 'cashfree'): ?>
         <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
     <?php else: ?>
         <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <?php endif; ?>
-    <script src="<?= e(url('assets/js/donate.js')) ?>"></script>
+    <script src="<?= e(asset('assets/js/donate.js')) ?>"></script>
 <?php endif; ?>
 <?php foreach (flashes() as $f): ?>
     <script>swal(<?= json_encode($f['type'] === 'success' ? 'Thank You!' : 'Please check') ?>, <?= json_encode($f['message']) ?>, <?= json_encode($f['type'] === 'success' ? 'success' : 'error') ?>);</script>

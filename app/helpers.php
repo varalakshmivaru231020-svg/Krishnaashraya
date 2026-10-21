@@ -109,6 +109,16 @@ function url(string $path = ''): string
     return rtrim((string) config('app.base_url', ''), '/') . '/' . ltrim($path, '/');
 }
 
+/**
+ * URL for a CSS / JS file with its last-changed time added (?v=...). The server tells browsers to keep
+ * these files for years, so a new version needs a new address to reach visitors straight away.
+ */
+function asset(string $path): string
+{
+    $file = ROOT . '/' . ltrim($path, '/');
+    return url($path) . (is_file($file) ? '?v=' . filemtime($file) : '');
+}
+
 /** URL for a stored image path (relative like "uploads/x.webp", or absolute http URL). */
 function img(?string $path, string $fallback = 'assets/images/about-us-nurture-educate-empower.webp'): string
 {
@@ -815,10 +825,99 @@ function server_upload_limit(): int
     return $limits ? min($limits) : 8 * 1024 ** 2;
 }
 
-/** Biggest slider video allowed: 40 MB, or less if the server is set lower. */
+/** Without ffmpeg a video is shown exactly as uploaded, so it has to be small already. */
+const VIDEO_DIRECT_MAX_MB = 40;
+/** With ffmpeg, bigger videos are accepted and shrunk on the server. */
+const VIDEO_OPTIMIZE_MAX_MB = 500;
+
+/** Path to the ffmpeg program that shrinks slider videos, or '' when the server has none. */
+function ffmpeg_path(): string
+{
+    static $path = null;
+    if ($path !== null) {
+        return $path;
+    }
+    // ~/bin/ffmpeg next to the site's htdocs folder (CloudPanel), then the usual system places.
+    foreach (array_filter([(string) config('video.ffmpeg', ''), dirname(ROOT, 2) . '/bin/ffmpeg', '/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg']) as $candidate) {
+        if (is_file($candidate) && is_executable($candidate)) {
+            return $path = $candidate;
+        }
+    }
+    if (function_exists('exec')) {
+        $out = [];
+        @exec(PHP_OS_FAMILY === 'Windows' ? 'where ffmpeg 2>NUL' : 'command -v ffmpeg 2>/dev/null', $out);
+        $found = trim((string) ($out[0] ?? ''));
+        if ($found !== '' && is_file($found)) {
+            return $path = $found;
+        }
+    }
+    return $path = '';
+}
+
+function video_can_optimize(): bool
+{
+    return function_exists('exec') && ffmpeg_path() !== '';
+}
+
+/** Biggest slider video allowed: 500 MB when the server can shrink it, otherwise 40 MB (or less if the server is set lower). */
 function video_upload_limit(): int
 {
-    return min(40 * 1024 ** 2, server_upload_limit());
+    return min((video_can_optimize() ? VIDEO_OPTIMIZE_MAX_MB : VIDEO_DIRECT_MAX_MB) * 1024 ** 2, server_upload_limit());
+}
+
+/** The PHP command-line program (PHP_BINARY is php-fpm on hosting). */
+function php_cli_binary(): string
+{
+    if (PHP_BINARY !== '' && !preg_match('/fpm|cgi/i', basename(PHP_BINARY)) && is_file(PHP_BINARY)) {
+        return PHP_BINARY;
+    }
+    foreach (['/usr/bin/php' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION, '/usr/bin/php', '/usr/local/bin/php'] as $candidate) {
+        if (is_file($candidate)) {
+            return $candidate;
+        }
+    }
+    return 'php';
+}
+
+/** Starts app/tools/video-optimize.php for a slide without making the admin wait. */
+function video_optimize_in_background(int $slideId): void
+{
+    $cmd = escapeshellarg(php_cli_binary()) . ' ' . escapeshellarg(ROOT . '/app/tools/video-optimize.php') . ' ' . $slideId;
+    if (PHP_OS_FAMILY === 'Windows') {
+        pclose(popen('start "" /B ' . $cmd . ' >NUL 2>&1', 'r'));
+    } else {
+        exec('nohup ' . $cmd . ' > /dev/null 2>&1 &');
+    }
+}
+
+/**
+ * Makes a web version of an uploaded video: H.264 MP4, at most 1920x1080 and 30 fps, no sound, first 60 seconds,
+ * "fast start" so it begins playing while it downloads. Also takes a still for the cover photo.
+ * Returns [web video path, cover photo path or null]. Throws if ffmpeg fails.
+ */
+function video_optimize(string $source): array
+{
+    $in = ROOT . '/' . $source;
+    $base = preg_replace('/\.[^.\/]+$/', '', $source);
+    $video = $base . '-web.mp4';
+    $poster = $base . '-cover.jpg';
+    $ff = escapeshellarg(ffmpeg_path());
+    $nice = PHP_OS_FAMILY === 'Windows' ? '' : 'nice -n 10 ';
+    $out = [];
+    exec($nice . $ff . ' -hide_banner -loglevel error -y -i ' . escapeshellarg($in)
+        . ' -map 0:v:0 -t 300 -an -sn -dn -fpsmax 30'
+        . ' -vf ' . escapeshellarg("scale='min(1920,iw)':'min(1080,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,format=yuv420p")
+        . ' -c:v libx264 -preset veryfast -crf 28 -maxrate 2500k -bufsize 5M -threads 2 -movflags +faststart '
+        . escapeshellarg(ROOT . '/' . $video) . ' 2>&1', $out, $code);
+    clearstatcache();
+    if ($code !== 0 || !is_file(ROOT . '/' . $video) || filesize(ROOT . '/' . $video) < 1024) {
+        delete_upload($video);
+        throw new RuntimeException('ffmpeg: ' . trim(implode(' ', array_slice($out, -3))));
+    }
+    $still = [];
+    exec($ff . ' -hide_banner -loglevel error -y -ss 1 -i ' . escapeshellarg(ROOT . '/' . $video)
+        . ' -frames:v 1 -q:v 3 ' . escapeshellarg(ROOT . '/' . $poster) . ' 2>&1', $still, $stillCode);
+    return [$video, $stillCode === 0 && is_file(ROOT . '/' . $poster) ? $poster : null];
 }
 
 /**
@@ -839,8 +938,14 @@ function store_video_upload(array $file, string $folder): string
     }
     $mime = (string) (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
     $types = ['video/mp4' => 'mp4', 'video/webm' => 'webm', 'video/x-m4v' => 'mp4'];
+    if (video_can_optimize()) {
+        // The server turns these into MP4, so phone and camera formats are fine too.
+        $types += ['video/quicktime' => 'mov', 'video/3gpp' => '3gp', 'video/x-matroska' => 'mkv', 'video/x-msvideo' => 'avi', 'video/mpeg' => 'mpg'];
+    }
     if (!isset($types[$mime])) {
-        throw new RuntimeException('Only MP4 or WebM videos are allowed' . ($mime === 'video/quicktime' ? ' (iPhone .MOV files must be saved as MP4 first).' : '.'));
+        throw new RuntimeException(video_can_optimize()
+            ? 'This file is not a video the website can use. Please choose an MP4, MOV or WebM video.'
+            : 'Only MP4 or WebM videos are allowed' . ($mime === 'video/quicktime' ? ' (iPhone .MOV files must be saved as MP4 first).' : '.'));
     }
     $folder = trim(preg_replace('/[^a-z0-9_-]/', '', strtolower($folder)), '/');
     $dir = ROOT . '/uploads/' . $folder;
@@ -933,4 +1038,95 @@ function popup_visible(): bool
         return false;
     }
     return $p['pages'] === 'all' || $path === '';
+}
+
+// ---------------------------------------------------------------- donation receipt (Admin -> Site Settings -> Donation receipt)
+
+/** What the receipt prints when nothing else has been set. */
+function receipt_defaults(): array
+{
+    return [
+        'receipt_org'            => 'Sri Krishnashraya Educational Trust',
+        'receipt_tagline'        => '(Registered Charitable Trust)',
+        'receipt_address'        => '# 88/1, 84/1, 84/5, Sant Baba Hardas Ram Dam, Thammarasanahalli, Chikka Haralagere, Sulibele, Bangalore - 562129.',
+        'receipt_pan'            => 'AATTS6672D',
+        'receipt_12aa'           => 'AATTS6672D25BL01',
+        'receipt_80g'            => 'AATTS6672D25BL02',
+        'receipt_email'          => 'krishnashrayahome@gmail.com',
+        'receipt_closing'        => 'Thanks for your support!',
+        'receipt_thanks'         => 'Thank you for your generous contribution to Sri Krishnashraya Educational Trust. Your support enables us to provide education, shelter, nutrition, healthcare, and holistic development for orphan, semi-orphan, and underprivileged children.',
+        'receipt_prefix'         => 'SKET/WEB',
+        'receipt_statement_prefix' => 'SKET/DCS',
+        'receipt_donor_prefix'   => 'DIDW',
+    ];
+}
+
+function receipt_text(string $key): string
+{
+    return setting($key, receipt_defaults()[$key] ?? '');
+}
+
+/**
+ * The donation's receipt number, e.g. SKET/WEB/2026/00001 — a separate series per year for website donations,
+ * given once when the donation is paid (or the first time an older paid donation's receipt is opened).
+ */
+function donation_receipt_no(array $d): string
+{
+    if (!empty($d['receipt_no'])) {
+        return (string) $d['receipt_no'];
+    }
+    if (($d['status'] ?? '') !== 'paid') {
+        return '';
+    }
+    $year = date('Y', strtotime($d['paid_at'] ?: $d['created_at']));
+    $key = "receipt_seq_$year";
+    db_exec("INSERT IGNORE INTO settings (setting_key, setting_value) VALUES (?, '0')", [$key]);
+    db_exec('UPDATE settings SET setting_value = LAST_INSERT_ID(CAST(setting_value AS UNSIGNED) + 1) WHERE setting_key = ?', [$key]);
+    $no = sprintf('%s/%s/%05d', rtrim(receipt_text('receipt_prefix'), '/'), $year, (int) db_value('SELECT LAST_INSERT_ID()'));
+    db_exec('UPDATE donations SET receipt_no = ? WHERE id = ? AND receipt_no IS NULL', [$no, $d['id']]);
+    return (string) db_value('SELECT receipt_no FROM donations WHERE id = ?', [$d['id']]);
+}
+
+/** Donor ID for the receipt: the same for every paid donation from one phone number or email address. */
+function donation_donor_id(array $d): string
+{
+    $first = (int) $d['id'];
+    if ($d['phone'] || $d['email']) {
+        $first = (int) (db_value(
+            "SELECT MIN(id) FROM donations WHERE status = 'paid' AND ((phone <> '' AND phone = ?) OR (email <> '' AND email = ?))",
+            [(string) $d['phone'], (string) $d['email']]
+        ) ?: $first);
+    }
+    return sprintf('%s%05d', receipt_text('receipt_donor_prefix'), $first);
+}
+
+/** 4000 -> "Rupees Four Thousand Only" (Indian system: thousand, lakh, crore). */
+function amount_in_words(float $amount): string
+{
+    $paiseTotal = (int) round($amount * 100);
+    $rupees = intdiv($paiseTotal, 100);
+    $paise = $paiseTotal % 100;
+    return 'Rupees ' . ($rupees ? number_in_words($rupees) : 'Zero') . ($paise ? ' and ' . number_in_words($paise) . ' Paise' : '') . ' Only';
+}
+
+function number_in_words(int $n): string
+{
+    $ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen',
+             'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    $tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    if ($n < 20) {
+        return $ones[$n];
+    }
+    if ($n < 100) {
+        return trim($tens[intdiv($n, 10)] . ' ' . $ones[$n % 10]);
+    }
+    if ($n < 1000) {
+        return trim($ones[intdiv($n, 100)] . ' Hundred ' . number_in_words($n % 100));
+    }
+    foreach ([[10000000, 'Crore'], [100000, 'Lakh'], [1000, 'Thousand']] as [$size, $name]) {
+        if ($n >= $size) {
+            return trim(number_in_words(intdiv($n, $size)) . " $name " . number_in_words($n % $size));
+        }
+    }
+    return '';
 }
